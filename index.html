@@ -327,6 +327,8 @@
     display:flex;align-items:center;justify-content:center;padding:20px;
   }
   .overlay.hidden{display:none}
+  /* the confirm can be raised from inside the edit dialog, so it sits above it */
+  #ask{z-index:260}
   .modal{
     background:linear-gradient(180deg,var(--panel),#161716);
     border:1px solid var(--line);border-top:3px solid var(--blood);
@@ -531,6 +533,19 @@
       <div class="spacer"></div>
       <button type="button" id="d-cancel">Cancel</button>
       <button type="button" id="d-save" class="btn-blood">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- confirmation prompt (native confirm() is blocked in sandboxed frames) -->
+<div id="ask" class="overlay hidden">
+  <div class="modal" style="max-width:430px">
+    <h2 id="ask-title">Confirm</h2>
+    <p class="tie-say" id="ask-say"></p>
+    <div class="modal-foot">
+      <div class="spacer"></div>
+      <button type="button" id="ask-no">Cancel</button>
+      <button type="button" id="ask-yes" class="btn-blood">Confirm</button>
     </div>
   </div>
 </div>
@@ -1157,6 +1172,23 @@
     els.tie.classList.add("hidden");
   });
 
+  /* ---------------- confirmation prompt ----------------
+     window.confirm() is silently blocked inside a sandboxed iframe (it just returns false),
+     which made every destructive button look dead on the published page. This replaces it. */
+  let askCb = null;
+  function askConfirm(title, message, yesLabel, cb){
+    $("#ask-title").textContent = title;
+    $("#ask-say").textContent = message;
+    $("#ask-yes").textContent = yesLabel;
+    askCb = cb;
+    $("#ask").classList.remove("hidden");
+    $("#ask-yes").focus();
+  }
+  function closeAsk(){ $("#ask").classList.add("hidden"); askCb = null; }
+  $("#ask-yes").addEventListener("click", () => { const cb = askCb; closeAsk(); if(cb) cb(); });
+  $("#ask-no").addEventListener("click", closeAsk);
+  $("#ask").addEventListener("click", e => { if(e.target === $("#ask")) closeAsk(); });
+
   /* ---------------- conditions popup ---------------- */
   let condTarget = null;
 
@@ -1284,9 +1316,13 @@
   $("#d-cancel").addEventListener("click", closeDialog);
   $("#d-delete").addEventListener("click", () => {
     if(!dlgTarget) return;
-    if(!confirm("Remove " + dlgTarget.name + " from the battle?")) return;
-    state.combatants = state.combatants.filter(o => o.id !== dlgTarget.id);
-    closeDialog(); save(); render();
+    const doomed = dlgTarget;
+    askConfirm("Remove combatant",
+      "Take " + doomed.name + " out of the battle entirely.",
+      "Remove", () => {
+        state.combatants = state.combatants.filter(o => o.id !== doomed.id);
+        closeDialog(); save(); render();
+      });
   });
   D.type.addEventListener("change", () => {
     if(!dlgIcon || !dlgIcon.startsWith("data:")){
@@ -1376,35 +1412,45 @@
 
   $("#btn-reroll").addEventListener("click", () => {
     if(!state.combatants.length) return;
-    if(!confirm("Reroll initiative for everyone in the battle?")) return;
-    state.combatants.forEach(c => { c.init = d20() + (c.mod || 0); });
-    sortByInit();
-    state.round = 0;
-    state.activeId = null;
-    save(); render(); maybeAskTies(null);
+    askConfirm("Reroll initiative",
+      "Everyone rolls a fresh d20 + Dex mod and the fight returns to round 0. HP and conditions are left alone.",
+      "Reroll", () => {
+        state.combatants.forEach(c => { c.init = d20() + (c.mod || 0); });
+        sortByInit();
+        state.round = 0;
+        state.activeId = null;
+        save(); render(); maybeAskTies(null);
+      });
   });
 
   $("#btn-newfight").addEventListener("click", () => {
     if(!state.combatants.length) return;
-    if(!confirm("Start a new battle? Every player and NPC stays on the board — with full HP, no conditions, fresh initiative and the round back to 0.")) return;
-    state.combatants.forEach(c => {
-      c.init = d20() + (c.mod || 0);
-      c.hp = c.maxHp;
-      c.tempHp = 0;
-      c.conds = [];
-    });
-    sortByInit();
-    state.round = 0;
-    state.activeId = null;
-    save(); render(); maybeAskTies(null);
+    askConfirm("New battle",
+      "Every player and NPC stays on the board. They get full HP, no conditions, fresh initiative, " +
+      "and the round goes back to 0.",
+      "Start new battle", () => {
+        state.combatants.forEach(c => {
+          c.init = d20() + (c.mod || 0);
+          c.hp = c.maxHp;
+          c.tempHp = 0;
+          c.conds = [];
+        });
+        sortByInit();
+        state.round = 0;
+        state.activeId = null;
+        save(); render(); maybeAskTies(null);
+      });
   });
 
   $("#btn-clear").addEventListener("click", () => {
     if(!state.combatants.length) return;
-    if(!confirm("Remove every player and NPC from the tracker and reset to round 0?")) return;
-    state = { round:0, activeId:null, askTies:state.askTies, showHelp:state.showHelp,
-              emojiFont:state.emojiFont, combatants:[] };
-    save(); render();
+    askConfirm("Clear all",
+      "This removes every player and NPC from the tracker and resets the fight to round 0.",
+      "Remove everyone", () => {
+        state = { round:0, activeId:null, askTies:state.askTies, showHelp:state.showHelp,
+                  emojiFont:state.emojiFont, combatants:[] };
+        save(); render();
+      });
   });
 
   /* Universal icons: one downloaded emoji set, so a portrait looks the same on every device.
@@ -1444,13 +1490,16 @@
     inp.addEventListener("keydown", e => { if(e.key === "Enter") addCombatants(); });
   });
 
-  const modalOpen = () => !els.dlg.classList.contains("hidden") || !els.tie.classList.contains("hidden");
+  const modalOpen = () => !els.dlg.classList.contains("hidden") ||
+                          !els.tie.classList.contains("hidden") ||
+                          !$("#ask").classList.contains("hidden");
 
   document.addEventListener("keydown", e => {
     if(e.key === "Escape"){
       if(!els.picker.classList.contains("hidden") || !els.condMenu.classList.contains("hidden")){
         els.picker.classList.add("hidden"); els.condMenu.classList.add("hidden"); return;
       }
+      if(!$("#ask").classList.contains("hidden")) return closeAsk();
       if(!els.dlg.classList.contains("hidden")) return closeDialog();
       if(!els.tie.classList.contains("hidden")){ tieQueue = []; els.tie.classList.add("hidden"); }
       return;
