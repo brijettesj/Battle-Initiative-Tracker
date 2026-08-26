@@ -62,10 +62,16 @@
   .emo,.portrait,.icon-btn,.cond-row .chip,.emoji-grid button{font-family:var(--emo-stack)}
   /* "Universal" icon mode — pull Noto Color Emoji so every device draws the same set */
   body.emo-web{--emo-stack:"Noto Color Emoji","Apple Color Emoji","Segoe UI Emoji",sans-serif}
-  .wrap{max-width:1240px;margin:0 auto;padding:18px 18px 60px}
+  /* two columns: the fight on the left, the log as a full-height rail on the right */
+  .wrap{
+    max-width:1460px;margin:0 auto;padding:18px 18px 60px;
+    display:grid;grid-template-columns:minmax(0,1fr) 322px;
+    gap:18px;align-items:start;
+  }
+  .main-col{grid-column:1;min-width:0}
 
   /* ---------- header ---------- */
-  header{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:10px;margin-bottom:16px}
+  header{grid-column:1 / -1;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:10px;margin-bottom:16px}
   .head-mid{grid-column:2;text-align:center}
   .head-right{grid-column:3;display:flex;justify-content:flex-end}
   header h1{font-size:25px;margin:0;color:var(--accent);text-shadow:0 0 20px rgba(105,8,8,.85)}
@@ -111,6 +117,9 @@
   }
   .btn-blood:hover{background:linear-gradient(180deg,#a81818,#7c0d0d);border-color:#c93030}
   .btn-sm{padding:6px 10px;font-size:12.5px}
+  .btn-hist{padding:5px 11px;font-size:16px;line-height:1.1}
+  button:disabled{opacity:.3;cursor:not-allowed}
+  button:disabled:hover{border-color:var(--line-lit);background:var(--panel3)}
   .btn-ghost{background:transparent;color:var(--muted)}
   .btn-ghost:hover{color:var(--text)}
 
@@ -268,9 +277,11 @@
 
   /* ---------- battle log ---------- */
   .log-shell{
+    grid-column:2;position:sticky;top:18px;
+    display:flex;flex-direction:column;max-height:calc(100vh - 36px);
     background:linear-gradient(180deg,var(--panel),#171817);
     border:1px solid var(--line);border-left:3px solid var(--blood);
-    border-radius:2px;margin-bottom:18px;overflow:hidden;
+    border-radius:2px;overflow:hidden;
   }
   .log-head{display:flex;align-items:center;gap:10px;padding:7px 12px 7px 4px}
   .log-tog{
@@ -287,7 +298,7 @@
     color:var(--bone);padding:1px 7px;font-variant-numeric:tabular-nums;
   }
   .log-body{
-    max-height:176px;overflow-y:auto;padding-bottom:6px;
+    flex:1;min-height:0;overflow-y:auto;padding-bottom:6px;
     border-top:1px solid var(--line);
     scrollbar-width:thin;scrollbar-color:var(--blood) transparent;
   }
@@ -313,6 +324,14 @@
   .log-row[data-kind=edit]{border-left-color:var(--line-lit);color:var(--muted)}
   .log-row[data-kind=system]{border-left-color:var(--blood-lit);color:var(--accent)}
   .log-empty{color:var(--muted);font-size:11.5px;padding:16px 14px;text-align:center;line-height:1.7}
+  /* collapsed, the rail shrinks to just its heading */
+  body.log-closed .wrap{grid-template-columns:minmax(0,1fr) auto}
+  body.log-closed .log-shell{max-height:none}
+  @media (max-width:1080px){
+    .wrap,body.log-closed .wrap{grid-template-columns:minmax(0,1fr)}
+    .log-shell{grid-column:1;position:static;max-height:none;margin-bottom:18px;order:2}
+    .log-body{max-height:220px}
+  }
 
   /* ---------- panels ---------- */
   .panel{
@@ -424,6 +443,8 @@
     </div>
   </header>
 
+  <div class="main-col">
+
   <div class="banner">
     <div class="round">Round <b id="round-num">1</b></div>
     <div class="turn-block">
@@ -431,24 +452,14 @@
       <span id="turn-name">—</span>
       <div id="turn-meta"></div>
     </div>
+    <button type="button" id="btn-undo" class="btn-hist" title="Nothing to undo">↶</button>
+    <button type="button" id="btn-redo" class="btn-hist" title="Nothing to redo">↷</button>
     <button id="btn-prev" class="btn-sm">← Previous</button>
     <button id="btn-next" class="btn-blood">Next Turn →</button>
   </div>
 
   <div class="track-shell">
     <div class="track" id="track"></div>
-  </div>
-
-  <div class="log-shell">
-    <div class="log-head">
-      <button type="button" class="log-tog" id="log-toggle">
-        <span class="log-caret">▾</span><span>Battle Log</span>
-      </button>
-      <span class="log-count" id="log-count">0</span>
-      <div class="spacer"></div>
-      <button type="button" class="btn-sm btn-ghost" id="log-clear">Clear log</button>
-    </div>
-    <div class="log-body" id="log-body"></div>
   </div>
 
   <div class="panel">
@@ -524,9 +535,12 @@
       reaches zero. Leave the box blank and it lasts until you remove it.<br>
       <b>Rounds</b> — the fight sits at <b>Round 0</b> until you press <i>Start Battle</i>. Both reset
       buttons return you there.<br>
-      <b>Battle log</b> — every hit, heal, condition, reorder and turn is recorded above, newest first
-      and grouped by round, so "who took damage five turns ago?" is a scroll rather than an argument.
-      Click the heading to fold it away.<br>
+      <b>Battle log</b> — every hit, heal, condition, reorder and turn is recorded down the right side,
+      newest first and grouped by round, so "who took damage five turns ago?" is a scroll rather than an
+      argument. Click the heading to fold it away.<br>
+      <b>Undo</b> — <kbd>↶</kbd> and <kbd>↷</kbd> in the turn bar step back and forward through anything
+      you've done, log included (<kbd>Ctrl</kbd>+<kbd>Z</kbd> / <kbd>Ctrl</kbd>+<kbd>Y</kbd>). History is
+      kept for this tab only, so reloading starts it over.<br>
       <b>Full stats</b> — hover a portrait and click <kbd>✎</kbd> for AC, temp HP, notes and everything else.<br>
       <b>Icons</b> — <i>System</i> uses whatever emoji your device draws. <i>Universal</i> downloads one
       shared set so the tracker looks the same on the laptop and the iPad; it needs the internet the first
@@ -535,6 +549,19 @@
       automatically, so you can close the tab and pick the fight back up.
     </p>
   </div>
+  </div><!-- /.main-col -->
+
+  <aside class="log-shell">
+    <div class="log-head">
+      <button type="button" class="log-tog" id="log-toggle">
+        <span class="log-caret">▾</span><span>Battle Log</span>
+      </button>
+      <span class="log-count" id="log-count">0</span>
+      <div class="spacer"></div>
+      <button type="button" class="btn-sm btn-ghost" id="log-clear">Clear</button>
+    </div>
+    <div class="log-body" id="log-body"></div>
+  </aside>
 </div>
 
 <!-- emoji / image picker -->
@@ -722,8 +749,84 @@
     return { round:0, activeId:null, askTies:true, showHelp:true, emojiFont:"system",
              showLog:true, log:[], combatants:[] };
   }
-  function save(){
+  /* ---------------- undo / redo ----------------
+     Snapshot-based: save() is the single choke point every mutation already goes through,
+     so hooking it here covers damage, conditions, drags, turns and roster changes alike.
+     The log lives in state, so undoing an action rewinds its log line too.
+     Stacks are memory-only — they are never written to localStorage, so a reload starts fresh.
+
+     save()         records a history step
+     save("quiet")  persists and moves the baseline, but adds no step (preference toggles)
+     save("defer")  persists only, leaving the baseline where it was (mid-typing keystrokes) */
+  const HISTORY_CAP = 40;
+  let undoStack = [], redoStack = [], lastSnap = null, restoring = false;
+
+  const snapshot = () => JSON.stringify(state);
+  const topLogLabel = () =>
+    (state.log && state.log.length) ? state.log[state.log.length - 1].x : "last change";
+
+  function save(mode){
+    if(!restoring && mode !== "defer"){
+      const now = snapshot();
+      if(mode !== "quiet" && lastSnap !== null && now !== lastSnap){
+        undoStack.push({s:lastSnap, label:topLogLabel()});
+        if(undoStack.length > HISTORY_CAP) undoStack.shift();
+        redoStack.length = 0;
+      }
+      lastSnap = now;
+    }
     try{ localStorage.setItem(STORE, JSON.stringify(state)); }catch(e){}
+    updateHistoryButtons();
+  }
+
+  function updateHistoryButtons(){
+    const u = $("#btn-undo"), r = $("#btn-redo");
+    if(!u || !r) return;
+    u.disabled = !undoStack.length;
+    r.disabled = !redoStack.length;
+    u.title = undoStack.length ? "Undo — " + undoStack[undoStack.length - 1].label : "Nothing to undo";
+    r.title = redoStack.length ? "Redo — " + redoStack[redoStack.length - 1].label : "Nothing to redo";
+  }
+
+  function restoreSnapshot(str){
+    const parsed = normalize(JSON.parse(str));
+    if(!parsed) return false;
+    restoring = true;
+    state = parsed;
+    lastSnap = snapshot();
+    try{ localStorage.setItem(STORE, JSON.stringify(state)); }catch(e){}
+    restoring = false;
+    // anything holding a reference into the old state must go
+    closeDialog(); closeAsk();
+    els.picker.classList.add("hidden");
+    els.condMenu.classList.add("hidden");
+    tieQueue = []; tieGroup = null;
+    els.tie.classList.add("hidden");
+    syncChrome();
+    render();
+    updateHistoryButtons();
+    return true;
+  }
+
+  function undo(){
+    if(!undoStack.length) return;
+    const step = undoStack.pop();
+    const current = {s:snapshot(), label:step.label};
+    if(restoreSnapshot(step.s)) redoStack.push(current);
+    else undoStack.push(step);
+  }
+
+  function redo(){
+    if(!redoStack.length) return;
+    const step = redoStack.pop();
+    const current = {s:snapshot(), label:step.label};
+    if(restoreSnapshot(step.s)) undoStack.push(current);
+    else redoStack.push(step);
+  }
+
+  function syncChrome(){
+    applyHelp(); applyLogOpen(); applyEmojiMode();
+    els.chkTies.checked = state.askTies !== false;
   }
 
   /* ---------------- battle log ----------------
@@ -1333,7 +1436,7 @@
     condTarget = c;
     els.condHead.innerHTML = "Conditions — " + esc(c.name) +
       '<span style="float:right;text-transform:none;letter-spacing:0">rounds</span>';
-    renderCondList(els.condGrid, c, () => { save(); render(); }, c.name);
+    renderCondList(els.condGrid, c, mode => { save(mode); render(); }, c.name);
     els.condMenu.classList.remove("hidden");
     placePop(els.condMenu, anchor);
   }
@@ -1381,17 +1484,17 @@
         if(!t) return;
         const v = parseInt(n.value, 10);
         t.n = (!isNaN(v) && v > 0) ? v : 0;
-        if(onChange) onChange();
+        if(onChange) onChange("defer");     // keystrokes persist but don't each become an undo step
       });
-      // logged on commit rather than per keystroke
+      // logged and committed to history once, on blur/Enter
       n.addEventListener("change", () => {
-        if(!logName) return;
         const t = holder.conds.find(x => x.k === cd.k);
-        if(!t) return;
-        logEvent("cond", logName + "'s " + cd.n + (t.n > 0
-          ? " set to " + t.n + " round" + (t.n === 1 ? "" : "s")
-          : " set to no time limit"));
-        renderLog();
+        if(logName && t){
+          logEvent("cond", logName + "'s " + cd.n + (t.n > 0
+            ? " set to " + t.n + " round" + (t.n === 1 ? "" : "s")
+            : " set to no time limit"));
+        }
+        if(onChange) onChange();
       });
       item.appendChild(n);
       host.appendChild(item);
@@ -1573,6 +1676,8 @@
   });
 
   /* ---------------- toolbar & keys ---------------- */
+  $("#btn-undo").addEventListener("click", e => { e.currentTarget.blur(); undo(); });
+  $("#btn-redo").addEventListener("click", e => { e.currentTarget.blur(); redo(); });
   $("#btn-next").addEventListener("click", e => { e.currentTarget.blur(); step(1); });
   $("#btn-prev").addEventListener("click", e => { e.currentTarget.blur(); step(-1); });
   $("#btn-add").addEventListener("click", addCombatants);
@@ -1648,7 +1753,7 @@
   }
   $("#sel-emoji").addEventListener("change", e => {
     state.emojiFont = e.target.value;
-    save(); applyEmojiMode();
+    save("quiet"); applyEmojiMode();
   });
 
   function applyLogOpen(){
@@ -1657,7 +1762,7 @@
   $("#log-toggle").addEventListener("click", e => {
     e.currentTarget.blur();
     state.showLog = !state.showLog;
-    save(); applyLogOpen();
+    save("quiet"); applyLogOpen();
   });
   $("#log-clear").addEventListener("click", e => {
     e.currentTarget.blur();
@@ -1674,10 +1779,10 @@
   $("#btn-help").addEventListener("click", e => {
     e.currentTarget.blur();
     state.showHelp = !state.showHelp;
-    save(); applyHelp();
+    save("quiet"); applyHelp();
   });
 
-  els.chkTies.addEventListener("change", () => { state.askTies = els.chkTies.checked; save(); });
+  els.chkTies.addEventListener("change", () => { state.askTies = els.chkTies.checked; save("quiet"); });
   els.type.addEventListener("change", () => { if(!pendingIcon) syncIconBtn(); });
 
   [els.name, els.init, els.mod, els.ac, els.hp, els.qty].forEach(inp => {
@@ -1689,6 +1794,12 @@
                           !$("#ask").classList.contains("hidden");
 
   document.addEventListener("keydown", e => {
+    const inField = e.target && (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA");
+    if((e.ctrlKey || e.metaKey) && !inField){       // leave native text undo alone inside fields
+      const k = e.key.toLowerCase();
+      if(k === "z" && !e.shiftKey){ e.preventDefault(); undo(); return; }
+      if(k === "y" || (k === "z" && e.shiftKey)){ e.preventDefault(); redo(); return; }
+    }
     if(e.key === "Escape"){
       if(!els.picker.classList.contains("hidden") || !els.condMenu.classList.contains("hidden")){
         els.picker.classList.add("hidden"); els.condMenu.classList.add("hidden"); return;
@@ -1711,6 +1822,8 @@
   applyEmojiMode();
   syncIconBtn();
   render();
+  lastSnap = snapshot();      // baseline: the first action becomes the first undo step
+  updateHistoryButtons();
 })();
 </script>
 </body>
