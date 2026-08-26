@@ -6,8 +6,8 @@
 <meta name="theme-color" content="#131413">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Initiative">
-<title>Initiative Tracker</title>
+<meta name="apple-mobile-web-app-title" content="Battle Tracker">
+<title>Dungeon Master's Battle Tracker</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&display=swap" rel="stylesheet">
@@ -74,7 +74,10 @@
   header{grid-column:1 / -1;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:10px;margin-bottom:16px}
   .head-mid{grid-column:2;text-align:center}
   .head-right{grid-column:3;display:flex;justify-content:flex-end}
-  header h1{font-size:25px;margin:0;color:var(--accent);text-shadow:0 0 20px rgba(105,8,8,.85)}
+  header h1{
+    font-size:34px;line-height:1.15;margin:0;color:var(--accent);
+    text-shadow:0 0 22px rgba(105,8,8,.85);
+  }
   header .sub{display:block;color:var(--muted);font-size:12.5px;margin-top:5px}
   /* the help toggle hides the subtitle and the instructions block together */
   body.no-help header .sub{display:none}
@@ -426,7 +429,7 @@
   }
   @media (max-width:640px){
     #f-name{width:100%}
-    header h1{font-size:20px}
+    header h1{font-size:26px}
   }
 </style>
 </head>
@@ -435,7 +438,10 @@
 
   <header>
     <div class="head-mid">
-      <h1><span class="emo">⚔️</span> Initiative Tracker</h1>
+      <h1>
+        <span class="emo">⚔️</span> Dungeon Master's <span class="emo">🐉</span><br>
+        Battle Tracker
+      </h1>
       <span class="sub">Drag a portrait to reorder · tap it to jump the turn · ✎ for full stats</span>
     </div>
     <div class="head-right">

@@ -1,4 +1,4 @@
-# ⚔️ Initiative Tracker
+# ⚔️ Dungeon Master's Battle Tracker 🐉
 
 A single-file combat tracker for D&D 5e, built for running a fight at the table. Portraits sit in a
 row in initiative order the way *Baldur's Gate 3* shows them, and you drag them to rearrange the order
