@@ -266,6 +266,54 @@
   }
   .card.down .name{text-decoration:line-through;color:var(--muted)}
 
+  /* ---------- battle log ---------- */
+  .log-shell{
+    background:linear-gradient(180deg,var(--panel),#171817);
+    border:1px solid var(--line);border-left:3px solid var(--blood);
+    border-radius:2px;margin-bottom:18px;overflow:hidden;
+  }
+  .log-head{display:flex;align-items:center;gap:10px;padding:7px 12px 7px 4px}
+  .log-tog{
+    display:flex;align-items:center;gap:8px;background:transparent;border-color:transparent;
+    font-family:Cinzel,Georgia,serif;font-size:11px;letter-spacing:.18em;text-transform:uppercase;
+    color:var(--muted);padding:5px 10px;
+  }
+  .log-tog:hover{background:var(--panel2);border-color:var(--line);color:var(--text)}
+  .log-caret{font-size:9px;transition:transform .15s;display:inline-block}
+  body.log-closed .log-caret{transform:rotate(-90deg)}
+  body.log-closed .log-body{display:none}
+  .log-count{
+    font-size:10px;background:var(--blood-deep);border:1px solid var(--blood);
+    color:var(--bone);padding:1px 7px;font-variant-numeric:tabular-nums;
+  }
+  .log-body{
+    max-height:176px;overflow-y:auto;padding-bottom:6px;
+    border-top:1px solid var(--line);
+    scrollbar-width:thin;scrollbar-color:var(--blood) transparent;
+  }
+  .log-body::-webkit-scrollbar{width:8px}
+  .log-body::-webkit-scrollbar-thumb{background:var(--blood)}
+  .log-div{
+    position:sticky;top:0;z-index:1;
+    font-family:Cinzel,Georgia,serif;font-size:9.5px;letter-spacing:.2em;text-transform:uppercase;
+    color:var(--accent);background:#151615;
+    padding:6px 14px 5px;border-bottom:1px solid var(--line);
+  }
+  .log-row{
+    font-size:11.5px;line-height:1.5;color:var(--text);
+    padding:3px 14px 3px 11px;border-left:3px solid transparent;
+  }
+  .log-row[data-kind=damage]{border-left-color:var(--enemy)}
+  .log-row[data-kind=heal]{border-left-color:var(--ally)}
+  .log-row[data-kind=temp]{border-left-color:var(--player)}
+  .log-row[data-kind=down]{border-left-color:var(--blood);color:var(--accent)}
+  .log-row[data-kind=cond]{border-left-color:#8a6bb0}
+  .log-row[data-kind=turn]{border-left-color:var(--line-lit);color:var(--muted)}
+  .log-row[data-kind=order],.log-row[data-kind=roster]{border-left-color:var(--line-lit)}
+  .log-row[data-kind=edit]{border-left-color:var(--line-lit);color:var(--muted)}
+  .log-row[data-kind=system]{border-left-color:var(--blood-lit);color:var(--accent)}
+  .log-empty{color:var(--muted);font-size:11.5px;padding:16px 14px;text-align:center;line-height:1.7}
+
   /* ---------- panels ---------- */
   .panel{
     background:linear-gradient(180deg,var(--panel),#171817);
@@ -391,6 +439,18 @@
     <div class="track" id="track"></div>
   </div>
 
+  <div class="log-shell">
+    <div class="log-head">
+      <button type="button" class="log-tog" id="log-toggle">
+        <span class="log-caret">▾</span><span>Battle Log</span>
+      </button>
+      <span class="log-count" id="log-count">0</span>
+      <div class="spacer"></div>
+      <button type="button" class="btn-sm btn-ghost" id="log-clear">Clear log</button>
+    </div>
+    <div class="log-body" id="log-body"></div>
+  </div>
+
   <div class="panel">
     <h2>Add to the battle</h2>
     <div class="row">
@@ -464,6 +524,9 @@
       reaches zero. Leave the box blank and it lasts until you remove it.<br>
       <b>Rounds</b> — the fight sits at <b>Round 0</b> until you press <i>Start Battle</i>. Both reset
       buttons return you there.<br>
+      <b>Battle log</b> — every hit, heal, condition, reorder and turn is recorded above, newest first
+      and grouped by round, so "who took damage five turns ago?" is a scroll rather than an argument.
+      Click the heading to fold it away.<br>
       <b>Full stats</b> — hover a portrait and click <kbd>✎</kbd> for AC, temp HP, notes and everything else.<br>
       <b>Icons</b> — <i>System</i> uses whatever emoji your device draws. <i>Universal</i> downloads one
       shared set so the tracker looks the same on the laptop and the iPad; it needs the internet the first
@@ -631,6 +694,8 @@
     s.askTies = s.askTies !== false;
     s.showHelp = s.showHelp !== false;
     s.emojiFont = s.emojiFont === "universal" ? "universal" : "system";
+    s.showLog = s.showLog !== false;
+    s.log = Array.isArray(s.log) ? s.log.filter(e => e && typeof e.x === "string") : [];
     s.combatants.forEach(c => {
       c.ac      = c.ac      || 0;
       c.tempHp  = c.tempHp  || 0;
@@ -654,10 +719,49 @@
         }
       }catch(e){ /* corrupt or blocked storage — fall through */ }
     }
-    return { round:0, activeId:null, askTies:true, showHelp:true, emojiFont:"system", combatants:[] };
+    return { round:0, activeId:null, askTies:true, showHelp:true, emojiFont:"system",
+             showLog:true, log:[], combatants:[] };
   }
   function save(){
     try{ localStorage.setItem(STORE, JSON.stringify(state)); }catch(e){}
+  }
+
+  /* ---------------- battle log ----------------
+     Every mutation drops a line here so "who took damage five turns ago?" is scrollable
+     rather than a memory test. Newest first; entries carry the round they happened in. */
+  const LOG_CAP = 400;
+  function logEvent(kind, text){
+    if(!Array.isArray(state.log)) state.log = [];
+    state.log.push({k:kind, x:text, round:state.round});
+    if(state.log.length > LOG_CAP) state.log.splice(0, state.log.length - LOG_CAP);
+  }
+
+  function renderLog(){
+    const body = $("#log-body");
+    const entries = state.log || [];
+    $("#log-count").textContent = entries.length;
+    body.innerHTML = "";
+    if(!entries.length){
+      body.innerHTML = '<div class="log-empty">Nothing has happened yet.<br>' +
+        "Every hit, heal, condition, reorder and turn lands here as you play.</div>";
+      return;
+    }
+    let lastRound = null;
+    for(let i = entries.length - 1; i >= 0; i--){
+      const e = entries[i];
+      if(e.round !== lastRound){
+        const d = document.createElement("div");
+        d.className = "log-div";
+        d.textContent = e.round === 0 ? "Before the battle" : "Round " + e.round;
+        body.appendChild(d);
+        lastRound = e.round;
+      }
+      const row = document.createElement("div");
+      row.className = "log-row";
+      row.dataset.kind = e.k || "system";
+      row.textContent = e.x;
+      body.appendChild(row);
+    }
   }
 
   const uid = () => "c" + Math.random().toString(36).slice(2,9);
@@ -679,6 +783,8 @@
     els.turnName.textContent = a ? a.name : (state.round === 0 && list.length ? "Not started" : "—");
     els.turnName.style.color = a ? sideColor(a.type) : "var(--muted)";
     els.turnMeta.innerHTML = a ? metaLine(a) : "";
+
+    renderLog();
 
     els.track.innerHTML = "";
     if(!list.length){
@@ -751,6 +857,7 @@
     rm.addEventListener("click", e => {
       e.stopPropagation();
       state.combatants = state.combatants.filter(o => o.id !== c.id);
+      logEvent("roster", c.name + " left the battle");
       save(); render();
     });
     wrap.appendChild(rm);
@@ -867,6 +974,7 @@
       const n = parseInt(v, 10);
       if(!isNaN(n) && n !== before){
         c.init = n;
+        logEvent("order", c.name + "'s initiative changed " + before + " → " + n);
         maybeAskTies([c.id]);
       }
     });
@@ -877,23 +985,33 @@
     inlineInput(wrap, "", "-7 +4 22 t8", raw => {
       raw = raw.trim();
       if(!raw) return;
+      const before = c.hp;
       if(/^t/i.test(raw)){                       // t8 → grant 8 temporary HP
         const n = parseInt(raw.slice(1), 10);
-        if(!isNaN(n)) c.tempHp = Math.max(0, n);
+        if(isNaN(n)) return;
+        c.tempHp = Math.max(0, n);
+        logEvent("temp", c.name + " gained " + c.tempHp + " temporary HP");
         return;
       }
       const n = parseInt(raw.replace(/^\+/, ""), 10);
       if(isNaN(n)) return;
       if(/^-/.test(raw)){                        // damage: temp HP absorbs it first
-        let dmg = -n;
+        const dmg = -n;
         const fromTemp = Math.min(c.tempHp, dmg);
         c.tempHp -= fromTemp;
         c.hp = Math.max(0, c.hp - (dmg - fromTemp));
+        logEvent("damage", c.name + " took " + dmg + " damage" +
+          (fromTemp ? " (" + fromTemp + " soaked by temp HP)" : "") +
+          " · " + before + " → " + c.hp);
       } else if(/^\+/.test(raw)){
         c.hp = clamp(c.hp + n, 0, c.maxHp);
+        logEvent("heal", c.name + " healed " + (c.hp - before) + " · " + before + " → " + c.hp);
       } else {
         c.hp = clamp(n, 0, c.maxHp);
+        logEvent("heal", c.name + "'s HP set to " + c.hp + " / " + c.maxHp);
       }
+      if(before > 0 && c.hp === 0) logEvent("down", c.name + " is down at 0 HP");
+      else if(before === 0 && c.hp > 0) logEvent("heal", c.name + " is back up at " + c.hp + " HP");
     });
   }
 
@@ -986,6 +1104,8 @@
     if(!d.moved){                       // a plain click: jump the turn to this combatant
       state.activeId = d.card.dataset.id;
       if(state.round === 0) state.round = 1;   // tapping someone also starts the fight
+      const who = state.combatants.find(o => o.id === state.activeId);
+      if(who) logEvent("turn", "Turn jumped to " + who.name);
       save(); render();
       return;
     }
@@ -993,6 +1113,7 @@
       const arr = state.combatants;
       const [item] = arr.splice(d.idx, 1);
       arr.splice(d.newIdx, 0, item);
+      logEvent("order", item.name + " dragged to #" + (d.newIdx + 1) + " in the order");
       save();
     }
     d.card.classList.remove("dragging");
@@ -1005,7 +1126,13 @@
   function tickConditions(c){
     if(!c) return;
     c.conds = c.conds.filter(x => {
-      if(x.n > 0){ x.n--; return x.n > 0; }
+      if(x.n > 0){
+        x.n--;
+        if(x.n === 0){
+          logEvent("cond", c.name + "'s " + COND[x.k].n + " wore off");
+          return false;
+        }
+      }
       return true;
     });
   }
@@ -1017,6 +1144,7 @@
     if(dir > 0 && state.round === 0){          // round 0 → the fight begins
       state.round = 1;
       state.activeId = list[0].id;
+      logEvent("system", "Battle begins — " + list[0].name + " acts first");
       save(); render(); scrollToActive();
       return;
     }
@@ -1030,6 +1158,7 @@
       if(i < 0){
         if(state.round <= 1){                  // stepping back off the top un-starts the battle
           state.round = 0; state.activeId = null;
+          logEvent("system", "Battle reset to round 0");
           save(); render();
           return;
         }
@@ -1037,6 +1166,8 @@
       }
     }
     state.activeId = list[i].id;
+    logEvent("turn", dir > 0 ? list[i].name + "'s turn"
+                             : "Stepped back to " + list[i].name + "'s turn");
     save(); render(); scrollToActive();
   }
 
@@ -1068,7 +1199,7 @@
     const maxHp = parseInt(els.hp.value, 10) || 0;
     const qty   = clamp(parseInt(els.qty.value, 10) || 1, 1, 20);
     const fixed = els.init.value.trim() === "" ? null : parseInt(els.init.value, 10);
-    const added = [];
+    const added = [], rolled = [];
 
     for(let i = 0; i < qty; i++){
       const c = {
@@ -1084,7 +1215,11 @@
       };
       insertByInit(c);
       added.push(c.id);
+      rolled.push(c.init);
     }
+    logEvent("roster", qty > 1
+      ? "Added " + qty + " × " + base + " (initiative " + rolled.join(", ") + ")"
+      : "Added " + base + " (initiative " + rolled[0] + ")");
 
     els.name.value = ""; els.init.value = ""; els.qty.value = 1;
     pendingIcon = null;
@@ -1152,6 +1287,8 @@
     const objs = ids.map(id => state.combatants.find(c => c.id === id)).filter(Boolean);
     const slots = objs.map(o => state.combatants.indexOf(o)).sort((a, b) => a - b);
     slots.forEach((slot, i) => { state.combatants[slot] = objs[i]; });
+    if(objs.length) logEvent("order", "Tie at " + objs[0].init + " settled: " +
+      objs.map(o => o.name).join(" → "));
   }
 
   $("#tie-players").addEventListener("click", () => {
@@ -1196,14 +1333,15 @@
     condTarget = c;
     els.condHead.innerHTML = "Conditions — " + esc(c.name) +
       '<span style="float:right;text-transform:none;letter-spacing:0">rounds</span>';
-    renderCondList(els.condGrid, c, () => { save(); render(); });
+    renderCondList(els.condGrid, c, () => { save(); render(); }, c.name);
     els.condMenu.classList.remove("hidden");
     placePop(els.condMenu, anchor);
   }
 
   // `holder` is anything with a .conds array — a combatant, or the dialog's working copy.
   // onChange saves and repaints the cards; it must never redraw this list, or typing loses focus.
-  function renderCondList(host, holder, onChange){
+  // logName is supplied only for the live popup — the edit dialog logs its own diff on save.
+  function renderCondList(host, holder, onChange, logName){
     host.innerHTML = "";
     CONDITIONS.forEach(cd => {
       const item = document.createElement("div");
@@ -1217,9 +1355,14 @@
       tog.addEventListener("click", e => {
         e.stopPropagation();
         const at = holder.conds.findIndex(x => x.k === cd.k);
-        if(at >= 0) holder.conds.splice(at, 1);
-        else holder.conds.push({k:cd.k, n:0});
-        renderCondList(host, holder, onChange);
+        if(at >= 0){
+          holder.conds.splice(at, 1);
+          if(logName) logEvent("cond", logName + " is no longer " + cd.n);
+        } else {
+          holder.conds.push({k:cd.k, n:0});
+          if(logName) logEvent("cond", logName + " is now " + cd.n);
+        }
+        renderCondList(host, holder, onChange, logName);
         if(onChange) onChange();
       });
       item.appendChild(tog);
@@ -1239,6 +1382,16 @@
         const v = parseInt(n.value, 10);
         t.n = (!isNaN(v) && v > 0) ? v : 0;
         if(onChange) onChange();
+      });
+      // logged on commit rather than per keystroke
+      n.addEventListener("change", () => {
+        if(!logName) return;
+        const t = holder.conds.find(x => x.k === cd.k);
+        if(!t) return;
+        logEvent("cond", logName + "'s " + cd.n + (t.n > 0
+          ? " set to " + t.n + " round" + (t.n === 1 ? "" : "s")
+          : " set to no time limit"));
+        renderLog();
       });
       item.appendChild(n);
       host.appendChild(item);
@@ -1297,6 +1450,8 @@
     const c = dlgTarget;
     if(!c) return;
     const before = c.init;
+    const was = {name:c.name, init:c.init, ac:c.ac, hp:c.hp, maxHp:c.maxHp,
+                 tempHp:c.tempHp, notes:c.notes, conds:c.conds.map(x => x.k + ":" + x.n).join("|")};
     c.name  = D.name.value.trim() || c.name;
     c.type  = D.type.value;
     c.init  = parseInt(D.init.value, 10) || 0;
@@ -1309,6 +1464,21 @@
     c.conds = dlgConds.map(x => ({k:x.k, n:x.n}));
     if(dlgIcon && dlgIcon.startsWith("data:")){ c.img = dlgIcon; }
     else { c.img = null; c.icon = dlgIcon || DEFAULT_ICON[c.type]; }
+    const diff = [];
+    if(c.name   !== was.name)   diff.push('renamed from "' + was.name + '"');
+    if(c.init   !== was.init)   diff.push("initiative " + was.init + " → " + c.init);
+    if(c.ac     !== was.ac)     diff.push("AC " + (was.ac || "—") + " → " + (c.ac || "—"));
+    if(c.hp     !== was.hp || c.maxHp !== was.maxHp)
+      diff.push("HP " + was.hp + "/" + was.maxHp + " → " + c.hp + "/" + c.maxHp);
+    if(c.tempHp !== was.tempHp) diff.push("temp HP " + was.tempHp + " → " + c.tempHp);
+    if(c.notes  !== was.notes)  diff.push(c.notes ? "notes updated" : "notes cleared");
+    if(c.conds.map(x => x.k + ":" + x.n).join("|") !== was.conds){
+      diff.push("conditions: " + (c.conds.length
+        ? c.conds.map(x => COND[x.k].n + (x.n > 0 ? " (" + x.n + ")" : "")).join(", ")
+        : "none"));
+    }
+    if(diff.length) logEvent("edit", c.name + " — " + diff.join("; "));
+
     closeDialog();
     save(); render();
     if(c.init !== before) maybeAskTies([c.id]);
@@ -1321,6 +1491,7 @@
       "Take " + doomed.name + " out of the battle entirely.",
       "Remove", () => {
         state.combatants = state.combatants.filter(o => o.id !== doomed.id);
+        logEvent("roster", doomed.name + " left the battle");
         closeDialog(); save(); render();
       });
   });
@@ -1408,7 +1579,11 @@
   $("#btn-roll").addEventListener("click", () => {
     els.init.value = d20() + (parseInt(els.mod.value, 10) || 0);
   });
-  $("#btn-sort").addEventListener("click", () => { sortByInit(); save(); render(); });
+  $("#btn-sort").addEventListener("click", () => {
+    sortByInit();
+    logEvent("order", "Order re-sorted by initiative");
+    save(); render();
+  });
 
   $("#btn-reroll").addEventListener("click", () => {
     if(!state.combatants.length) return;
@@ -1419,6 +1594,7 @@
         sortByInit();
         state.round = 0;
         state.activeId = null;
+        logEvent("system", "Initiative rerolled for everyone — back to round 0");
         save(); render(); maybeAskTies(null);
       });
   });
@@ -1438,6 +1614,8 @@
         sortByInit();
         state.round = 0;
         state.activeId = null;
+        state.log = [];                       // a fresh fight starts with a fresh log
+        logEvent("system", "New battle — everyone restored to full HP with fresh initiative");
         save(); render(); maybeAskTies(null);
       });
   });
@@ -1448,7 +1626,7 @@
       "This removes every player and NPC from the tracker and resets the fight to round 0.",
       "Remove everyone", () => {
         state = { round:0, activeId:null, askTies:state.askTies, showHelp:state.showHelp,
-                  emojiFont:state.emojiFont, combatants:[] };
+                  emojiFont:state.emojiFont, showLog:state.showLog, log:[], combatants:[] };
         save(); render();
       });
   });
@@ -1471,6 +1649,22 @@
   $("#sel-emoji").addEventListener("change", e => {
     state.emojiFont = e.target.value;
     save(); applyEmojiMode();
+  });
+
+  function applyLogOpen(){
+    document.body.classList.toggle("log-closed", !state.showLog);
+  }
+  $("#log-toggle").addEventListener("click", e => {
+    e.currentTarget.blur();
+    state.showLog = !state.showLog;
+    save(); applyLogOpen();
+  });
+  $("#log-clear").addEventListener("click", e => {
+    e.currentTarget.blur();
+    if(!state.log || !state.log.length) return;
+    askConfirm("Clear log",
+      "This erases the battle history. Combatants, HP and conditions are untouched.",
+      "Clear log", () => { state.log = []; save(); render(); });
   });
 
   function applyHelp(){
@@ -1513,6 +1707,7 @@
 
   els.chkTies.checked = state.askTies !== false;
   applyHelp();
+  applyLogOpen();
   applyEmojiMode();
   syncIconBtn();
   render();

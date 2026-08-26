@@ -38,6 +38,12 @@ Note that each device keeps its own battle — a fight set up on a laptop won't 
 - Give one a duration and the counter ticks down at the end of that character's turn, dropping the
   condition automatically at zero. Leave it blank and it stays until you remove it.
 
+**Battle log**
+- A scrollable history under the initiative row: every hit, heal, temp HP, condition, reorder, turn
+  and roster change, newest first and grouped under sticky round headers.
+- Answers "who took damage five turns ago?" without anyone relying on memory.
+- Folds away with a click; **Clear log** wipes the history without touching the fight.
+
 **Per-character detail**
 - Hover a portrait and click ✎ for AC, temporary HP, Dex modifier, notes and conditions.
 - Notes show as a 📝 chip on the card and in full in the banner on that character's turn.
