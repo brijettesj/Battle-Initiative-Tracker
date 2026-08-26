@@ -1,0 +1,1473 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#131413">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Initiative">
+<title>Initiative Tracker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    /* black & red */
+    --bg:#131413;
+    --bg-deep:#0b0c0b;
+    --panel:#1a1b1a;
+    --panel2:#212221;
+    --panel3:#2a2b2a;
+    --line:#323432;
+    --line-lit:#464846;
+
+    --blood:#690808;        /* structural red: fills, badges, borders */
+    --blood-lit:#8f1212;    /* hover / brighter fill */
+    --blood-deep:#3d0505;   /* shadow red */
+    --accent:#d9564e;       /* readable red for text & highlights */
+    --ember:#f0705f;        /* glow on the active combatant */
+
+    --text:#e4e2df;
+    --muted:#8a8d89;
+    --bone:#f2e9e6;
+
+    --player:#5b93c4;
+    --ally:#7fa16a;
+    --enemy:#b03030;
+
+    --card-w:120px;
+    --gap:16px;
+
+    /* named colour-emoji fonts, so no platform has to guess */
+    --emo-stack:"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji","Twemoji Mozilla",
+                "EmojiOne Color","Android Emoji","Segoe UI Symbol",sans-serif;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    background:
+      radial-gradient(900px 420px at 50% -8%, #241010 0%, transparent 62%),
+      var(--bg);
+    color:var(--text);
+    font-family:"Segoe UI",system-ui,-apple-system,sans-serif;
+    min-height:100vh;
+    -webkit-user-select:none; user-select:none;
+  }
+  body.is-dragging{cursor:grabbing}
+  h1,h2,.disp{font-family:Cinzel,"Palatino Linotype",Georgia,serif;letter-spacing:.04em}
+
+  /* Elements holding an emoji and nothing else. Kept off body text on purpose:
+     emoji fonts also carry digits for keycaps, and would hijack the initiative numbers. */
+  .emo,.portrait,.icon-btn,.cond-row .chip,.emoji-grid button{font-family:var(--emo-stack)}
+  /* "Universal" icon mode — pull Noto Color Emoji so every device draws the same set */
+  body.emo-web{--emo-stack:"Noto Color Emoji","Apple Color Emoji","Segoe UI Emoji",sans-serif}
+  .wrap{max-width:1240px;margin:0 auto;padding:18px 18px 60px}
+
+  /* ---------- header ---------- */
+  header{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:10px;margin-bottom:16px}
+  .head-mid{grid-column:2;text-align:center}
+  .head-right{grid-column:3;display:flex;justify-content:flex-end}
+  header h1{font-size:25px;margin:0;color:var(--accent);text-shadow:0 0 20px rgba(105,8,8,.85)}
+  header .sub{display:block;color:var(--muted);font-size:12.5px;margin-top:5px}
+  /* the help toggle hides the subtitle and the instructions block together */
+  body.no-help header .sub{display:none}
+  body.no-help .hint{display:none}
+
+  /* ---------- turn banner ---------- */
+  .banner{
+    display:flex;align-items:center;gap:14px;flex-wrap:wrap;
+    background:linear-gradient(180deg,var(--panel2),var(--panel));
+    border:1px solid var(--line);border-left:3px solid var(--blood);
+    border-radius:2px;padding:12px 16px;margin-bottom:16px;
+  }
+  .round{
+    font-family:Cinzel,Georgia,serif;font-size:11px;letter-spacing:.16em;
+    text-transform:uppercase;color:var(--muted);
+    border:1px solid var(--line);border-radius:2px;padding:7px 13px;white-space:nowrap;
+  }
+  .round b{color:var(--accent);font-size:16px}
+  .turn-block{flex:1;min-width:200px}
+  .turn-block small{
+    display:block;font-family:Cinzel,Georgia,serif;font-size:10px;letter-spacing:.18em;
+    text-transform:uppercase;color:var(--muted);margin-bottom:2px;
+  }
+  #turn-name{font-family:Cinzel,Georgia,serif;font-size:20px}
+  #turn-meta{font-size:12px;color:var(--muted);margin-top:3px;line-height:1.5}
+  #turn-meta .chip{color:var(--text)}
+  #turn-meta .note{color:var(--accent);font-style:italic}
+
+  /* ---------- buttons & inputs ---------- */
+  button{
+    font:inherit;cursor:pointer;border-radius:2px;border:1px solid var(--line-lit);
+    background:var(--panel3);color:var(--text);padding:8px 14px;transition:.12s;
+  }
+  button:hover{border-color:var(--blood-lit);background:#332020}
+  button:active{transform:translateY(1px)}
+  .btn-blood{
+    background:linear-gradient(180deg,var(--blood-lit),var(--blood));
+    color:var(--bone);border-color:#a41c1c;font-weight:700;
+    text-shadow:0 1px 2px rgba(0,0,0,.6);
+  }
+  .btn-blood:hover{background:linear-gradient(180deg,#a81818,#7c0d0d);border-color:#c93030}
+  .btn-sm{padding:6px 10px;font-size:12.5px}
+  .btn-ghost{background:transparent;color:var(--muted)}
+  .btn-ghost:hover{color:var(--text)}
+
+  input[type=text],input[type=number],select,textarea{
+    font:inherit;font-size:14px;background:#0f100f;color:var(--text);
+    border:1px solid var(--line);border-radius:2px;padding:8px 10px;outline:0;
+    -webkit-user-select:text;user-select:text;
+  }
+  input:focus,select:focus,textarea:focus{
+    border-color:var(--blood-lit);box-shadow:0 0 0 2px rgba(105,8,8,.45);
+  }
+  input[type=number]{width:74px}
+  textarea{resize:vertical;min-height:60px;width:100%;font-size:13px;line-height:1.5}
+  .field{display:flex;flex-direction:column;gap:5px}
+  .field label{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+
+  /* ---------- initiative track ---------- */
+  .track-shell{
+    position:relative;
+    background:linear-gradient(180deg,var(--bg-deep),#181918);
+    border:1px solid var(--line);border-radius:2px;
+    padding:28px 16px 18px;margin-bottom:18px;
+    box-shadow:inset 0 0 40px rgba(105,8,8,.14);
+  }
+  .track-shell::before{
+    content:"Initiative Order";position:absolute;top:-8px;left:16px;
+    background:var(--bg);border:1px solid var(--line);border-left:2px solid var(--blood);
+    font-family:Cinzel,Georgia,serif;font-size:10px;letter-spacing:.2em;text-transform:uppercase;
+    color:var(--muted);padding:2px 12px;
+  }
+  .track{
+    position:relative;display:flex;gap:var(--gap);
+    overflow-x:auto;overflow-y:visible;padding:28px 10px 12px;
+    scrollbar-width:thin;scrollbar-color:var(--blood) transparent;
+    min-height:214px;
+  }
+  .track::-webkit-scrollbar{height:8px}
+  .track::-webkit-scrollbar-thumb{background:var(--blood);border-radius:0}
+  .empty{
+    color:var(--muted);font-size:14px;text-align:center;width:100%;
+    align-self:center;padding:40px 10px;line-height:1.8;
+  }
+
+  .card{
+    position:relative;flex:0 0 var(--card-w);width:var(--card-w);
+    display:flex;flex-direction:column;align-items:center;gap:6px;
+    cursor:grab;touch-action:none;
+    transition:transform .18s cubic-bezier(.2,.8,.3,1);
+  }
+  .card.dragging{transition:none;z-index:60;cursor:grabbing;filter:drop-shadow(0 16px 24px rgba(0,0,0,.75))}
+
+  /* the wrapper does NOT clip, so corner badges stay fully visible */
+  .port-wrap{position:relative;width:92px;height:92px}
+  .portrait{
+    width:100%;height:100%;border-radius:0;overflow:hidden;
+    background:linear-gradient(180deg,#2b2222,#171717);
+    border:2px solid var(--line-lit);
+    display:flex;align-items:center;justify-content:center;
+    font-size:46px;line-height:1;
+    box-shadow:0 4px 12px rgba(0,0,0,.6), inset 0 0 0 1px rgba(0,0,0,.6);
+  }
+  .portrait img{width:100%;height:100%;object-fit:cover;display:block;pointer-events:none}
+  .card[data-type=player] .portrait{border-color:var(--player)}
+  .card[data-type=ally]   .portrait{border-color:var(--ally)}
+  .card[data-type=enemy]  .portrait{border-color:var(--enemy)}
+
+  .init-badge{
+    position:absolute;top:-9px;left:-9px;min-width:32px;height:28px;padding:0 6px;
+    border-radius:0;background:linear-gradient(180deg,var(--blood-lit),var(--blood));
+    color:var(--bone);font-family:Cinzel,Georgia,serif;font-weight:700;font-size:15px;
+    display:flex;align-items:center;justify-content:center;
+    border:1px solid #b02020;box-shadow:0 2px 8px rgba(0,0,0,.7);
+    cursor:text;z-index:3;
+  }
+  .init-badge input{
+    width:100%;min-width:24px;background:transparent;border:0;outline:0;text-align:center;
+    font:inherit;color:inherit;padding:0;
+  }
+  .ac-badge{
+    position:absolute;bottom:-8px;right:-8px;min-width:26px;height:24px;padding:0 5px;
+    background:#0f100f;border:1px solid var(--line-lit);color:var(--text);
+    font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;
+    box-shadow:0 2px 6px rgba(0,0,0,.7);z-index:3;
+  }
+  .ac-badge::before{
+    content:"\1F6E1\FE0F";font-family:var(--emo-stack);
+    font-size:9px;margin-right:3px;opacity:.75;
+  }
+
+  .corner-btn{
+    position:absolute;width:22px;height:22px;padding:0;border-radius:0;
+    background:var(--panel2);border:1px solid var(--line-lit);color:var(--muted);
+    font-size:12px;line-height:1;display:flex;align-items:center;justify-content:center;
+    opacity:0;transition:.12s;z-index:4;
+  }
+  .card:hover .corner-btn,.card.active .corner-btn{opacity:1}
+  .btn-remove{top:-9px;right:-9px}
+  .btn-remove:hover{background:var(--blood);color:var(--bone);border-color:#c02020}
+  .btn-edit{bottom:-8px;left:-8px}
+  .btn-edit:hover{background:var(--panel3);color:var(--accent);border-color:var(--blood-lit)}
+
+  .name{
+    font-size:12.5px;text-align:center;width:100%;line-height:1.25;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px;
+  }
+  .cond-row{
+    display:flex;flex-wrap:wrap;gap:2px;justify-content:center;
+    min-height:19px;width:100%;cursor:pointer;padding:1px 2px;
+    border:1px dashed transparent;
+  }
+  .cond-row:hover{border-color:var(--line-lit)}
+  .cond-row .chip{
+    display:inline-flex;align-items:center;
+    font-size:12px;line-height:16px;background:#0f100f;border:1px solid var(--blood);
+    padding:0 3px;
+  }
+  .cond-row .chip .n{
+    font-size:9px;font-weight:700;color:var(--accent);margin-left:2px;
+    align-self:flex-start;font-variant-numeric:tabular-nums;
+  }
+  .cond-row .add{color:var(--muted);font-size:11px;opacity:0;line-height:16px}
+  .card:hover .cond-row .add{opacity:1}
+
+  .hp{width:100%;cursor:pointer}
+  .hp-bar{position:relative;height:8px;background:#0b0c0b;border:1px solid #000;overflow:hidden;display:flex}
+  .hp-fill{height:100%;transition:width .25s;background:var(--ally)}
+  .hp-fill.warn{background:#c9852b}
+  .hp-fill.bad{background:var(--enemy)}
+  .hp-temp{height:100%;background:var(--player);opacity:.85}
+  .hp-txt{font-size:10.5px;color:var(--muted);text-align:center;margin-top:2px}
+  .hp-txt .tmp{color:var(--player)}
+  .hp input{
+    width:100%;margin-top:2px;font-size:11px;text-align:center;
+    background:#0b0c0b;border:1px solid var(--blood-lit);color:var(--text);padding:2px;
+  }
+
+  .card.active{transform:translateY(-7px)}
+  .card.active.dragging{transform:none}
+  .card.active .portrait{
+    border-color:var(--ember);
+    box-shadow:0 0 0 3px rgba(105,8,8,.55), 0 0 26px rgba(217,86,78,.5), inset 0 0 0 1px #000;
+  }
+  .card.active .name{color:var(--accent);font-weight:700}
+  .card.active::before{
+    content:"▼";position:absolute;top:-26px;left:50%;transform:translateX(-50%);
+    color:var(--ember);font-size:13px;text-shadow:0 0 10px rgba(217,86,78,.9);
+  }
+  .card.down .portrait{filter:grayscale(1) brightness(.5)}
+  .card.down .port-wrap::after{
+    content:"\1F480";font-family:var(--emo-stack);
+    position:absolute;inset:0;display:flex;align-items:center;
+    justify-content:center;font-size:42px;pointer-events:none;z-index:2;
+  }
+  .card.down .name{text-decoration:line-through;color:var(--muted)}
+
+  /* ---------- panels ---------- */
+  .panel{
+    background:linear-gradient(180deg,var(--panel),#171817);
+    border:1px solid var(--line);border-top:2px solid var(--blood);
+    border-radius:2px;padding:16px;
+  }
+  .panel h2{margin:0 0 12px;font-size:13px;color:var(--accent);letter-spacing:.16em;text-transform:uppercase}
+  .row{display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end}
+  #f-name{width:180px}
+  .toolbar{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px;align-items:center}
+  .spacer{flex:1}
+  .tie-toggle{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);cursor:pointer}
+  .tie-toggle input{accent-color:var(--blood-lit);width:14px;height:14px}
+  .hint{color:var(--muted);font-size:11.5px;margin-top:12px;line-height:1.75}
+  .hint b{color:var(--accent);font-weight:600}
+  .hint kbd{
+    background:#0f100f;border:1px solid var(--line-lit);border-bottom-width:2px;
+    padding:1px 5px;font-size:10.5px;font-family:inherit;color:var(--text);
+  }
+
+  .icon-btn{width:46px;height:46px;padding:0;font-size:24px;display:flex;
+    align-items:center;justify-content:center;overflow:hidden}
+  .icon-btn img{width:100%;height:100%;object-fit:cover}
+
+  /* ---------- floating popups ---------- */
+  .pop{
+    position:fixed;z-index:300;background:var(--panel2);
+    border:1px solid var(--blood);box-shadow:0 18px 40px rgba(0,0,0,.8);
+    padding:10px;border-radius:2px;
+  }
+  .pop.hidden{display:none}
+  #picker{width:300px}
+  .emoji-grid{display:grid;grid-template-columns:repeat(8,1fr);gap:2px;max-height:196px;overflow-y:auto}
+  .emoji-grid button{padding:0;height:32px;font-size:19px;background:transparent;border-color:transparent}
+  .emoji-grid button:hover{background:var(--blood-deep);border-color:var(--blood)}
+  .pop-foot{border-top:1px solid var(--line);margin-top:8px;padding-top:8px}
+  .pop-head{
+    font-family:Cinzel,Georgia,serif;font-size:10px;letter-spacing:.18em;text-transform:uppercase;
+    color:var(--muted);margin-bottom:8px;
+  }
+  #cond-menu{width:268px}
+  .cond-list{display:flex;flex-direction:column;gap:2px;max-height:300px;overflow-y:auto}
+  .cond-item{display:flex;align-items:center;gap:5px}
+  .cond-tog{
+    flex:1;min-width:0;display:flex;align-items:center;gap:7px;padding:5px 7px;font-size:11.5px;
+    background:transparent;border-color:transparent;color:var(--muted);text-align:left;
+  }
+  .cond-tog:hover{background:var(--panel3);border-color:var(--line-lit);color:var(--text)}
+  .cond-tog.on{background:var(--blood-deep);border-color:var(--blood);color:var(--bone)}
+  .cond-n{
+    width:38px;flex:0 0 38px;padding:4px 2px;text-align:center;font-size:11.5px;
+    font-variant-numeric:tabular-nums;
+  }
+  .cond-n:disabled{opacity:.22;cursor:not-allowed}
+
+  /* ---------- modals ---------- */
+  .overlay{
+    position:fixed;inset:0;z-index:200;background:rgba(5,5,5,.78);
+    display:flex;align-items:center;justify-content:center;padding:20px;
+  }
+  .overlay.hidden{display:none}
+  .modal{
+    background:linear-gradient(180deg,var(--panel),#161716);
+    border:1px solid var(--line);border-top:3px solid var(--blood);
+    border-radius:2px;padding:20px;width:100%;max-width:520px;
+    max-height:88vh;overflow-y:auto;box-shadow:0 24px 70px rgba(0,0,0,.85);
+  }
+  .modal h2{margin:0 0 16px;font-size:14px;color:var(--accent);letter-spacing:.16em;text-transform:uppercase}
+  .modal .row{margin-bottom:12px}
+  .modal-foot{display:flex;gap:8px;margin-top:18px;padding-top:14px;border-top:1px solid var(--line)}
+  .tie-list{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0}
+  .tie-chip{
+    display:flex;align-items:center;gap:8px;padding:8px 12px;
+    background:var(--panel2);border:1px solid var(--line-lit);border-radius:2px;font-size:13px;
+  }
+  .tie-chip:hover{border-color:var(--blood-lit)}
+  .tie-chip.picked{background:var(--blood-deep);border-color:var(--blood);color:var(--bone)}
+  .tie-chip .ord{
+    font-family:Cinzel,Georgia,serif;font-weight:700;color:var(--accent);
+    min-width:14px;text-align:center;
+  }
+  .tie-say{font-size:13px;color:var(--muted);line-height:1.6}
+
+  /* touch devices have no hover — keep the corner controls permanently visible */
+  @media (hover:none){
+    .corner-btn{opacity:1}
+    .cond-row .add{opacity:1}
+    .corner-btn{width:26px;height:26px;font-size:14px}
+  }
+  @media (max-width:640px){
+    #f-name{width:100%}
+    header h1{font-size:20px}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="head-mid">
+      <h1><span class="emo">⚔️</span> Initiative Tracker</h1>
+      <span class="sub">Drag a portrait to reorder · tap it to jump the turn · ✎ for full stats</span>
+    </div>
+    <div class="head-right">
+      <button type="button" id="btn-help" class="btn-sm btn-ghost">✕ Hide help</button>
+    </div>
+  </header>
+
+  <div class="banner">
+    <div class="round">Round <b id="round-num">1</b></div>
+    <div class="turn-block">
+      <small>Current turn</small>
+      <span id="turn-name">—</span>
+      <div id="turn-meta"></div>
+    </div>
+    <button id="btn-prev" class="btn-sm">← Previous</button>
+    <button id="btn-next" class="btn-blood">Next Turn →</button>
+  </div>
+
+  <div class="track-shell">
+    <div class="track" id="track"></div>
+  </div>
+
+  <div class="panel">
+    <h2>Add to the battle</h2>
+    <div class="row">
+      <div class="field">
+        <label>Icon</label>
+        <button type="button" id="icon-btn" class="icon-btn">👹</button>
+      </div>
+      <div class="field">
+        <label>Name</label>
+        <input type="text" id="f-name" placeholder="Goblin Archer" autocomplete="off">
+      </div>
+      <div class="field">
+        <label>Side</label>
+        <select id="f-type">
+          <option value="player">Player</option>
+          <option value="ally">Ally / NPC</option>
+          <option value="enemy" selected>Enemy</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Initiative</label>
+        <input type="number" id="f-init" placeholder="roll">
+      </div>
+      <div class="field">
+        <label title="Dexterity modifier, used by the roll button">Dex mod</label>
+        <input type="number" id="f-mod" value="0" style="width:62px">
+      </div>
+      <button type="button" id="btn-roll" class="btn-sm" title="Roll d20 + Dex mod into the initiative box"><span class="emo">🎲</span> Roll</button>
+      <div class="field">
+        <label>AC</label>
+        <input type="number" id="f-ac" placeholder="—" min="0" style="width:62px">
+      </div>
+      <div class="field">
+        <label>Max HP</label>
+        <input type="number" id="f-hp" placeholder="—" min="0">
+      </div>
+      <div class="field">
+        <label title="Add several copies at once, each with its own initiative roll">Qty</label>
+        <input type="number" id="f-qty" value="1" min="1" max="20" style="width:58px">
+      </div>
+      <button type="button" id="btn-add" class="btn-blood">Add</button>
+    </div>
+
+    <div class="toolbar">
+      <button id="btn-sort" class="btn-sm">↓ Sort by initiative</button>
+      <button id="btn-reroll" class="btn-sm"><span class="emo">🎲</span> Reroll everyone</button>
+      <label class="tie-toggle" title="Prompt you to break ties when two combatants roll the same number">
+        <input type="checkbox" id="chk-ties" checked> Ask about initiative ties
+      </label>
+      <label class="tie-toggle" title="Universal draws every icon from one downloaded emoji set, so the tracker looks identical on any device">
+        Icons
+        <select id="sel-emoji" style="font-size:12px;padding:4px 6px">
+          <option value="system">System</option>
+          <option value="universal">Universal</option>
+        </select>
+      </label>
+      <div class="spacer"></div>
+      <button id="btn-newfight" class="btn-sm btn-ghost">New battle (keep roster)</button>
+      <button id="btn-clear" class="btn-sm btn-ghost">Clear all</button>
+    </div>
+
+    <p class="hint">
+      <b>Initiative</b> — leave it blank and a d20 + Dex mod is rolled for you. Click the red number on a
+      portrait to change it mid-fight.<br>
+      <b>HP</b> — click the health bar and type <kbd>-7</kbd> for damage, <kbd>+4</kbd> for healing,
+      <kbd>22</kbd> to set it exactly, or <kbd>t8</kbd> to grant 8 temporary HP. Damage eats temp HP first,
+      just like the rules. At 0 HP the portrait greys out but keeps its place in the order.<br>
+      <b>Conditions</b> — click the dashed strip under any name to toggle <i>prone</i>, <i>poisoned</i>,
+      <i>concentrating</i> and the rest. Type a number in the box beside one to give it a duration: the
+      counter ticks down at the end of that character's turn and the condition falls off by itself when it
+      reaches zero. Leave the box blank and it lasts until you remove it.<br>
+      <b>Rounds</b> — the fight sits at <b>Round 0</b> until you press <i>Start Battle</i>. Both reset
+      buttons return you there.<br>
+      <b>Full stats</b> — hover a portrait and click <kbd>✎</kbd> for AC, temp HP, notes and everything else.<br>
+      <b>Icons</b> — <i>System</i> uses whatever emoji your device draws. <i>Universal</i> downloads one
+      shared set so the tracker looks the same on the laptop and the iPad; it needs the internet the first
+      time you switch, then works offline.<br>
+      <b>Turns</b> — <kbd>Space</kbd> or <kbd>→</kbd> advances, <kbd>←</kbd> goes back. Everything saves
+      automatically, so you can close the tab and pick the fight back up.
+    </p>
+  </div>
+</div>
+
+<!-- emoji / image picker -->
+<div id="picker" class="pop hidden">
+  <div class="pop-head">Choose an icon</div>
+  <div class="emoji-grid" id="emoji-grid"></div>
+  <div class="pop-foot">
+    <button type="button" id="upload-btn" class="btn-sm" style="width:100%"><span class="emo">🖼️</span> Use my own image…</button>
+    <input type="file" id="upload-input" accept="image/*" hidden>
+  </div>
+</div>
+
+<!-- condition quick-toggle -->
+<div id="cond-menu" class="pop hidden">
+  <div class="pop-head" id="cond-head">Conditions</div>
+  <div class="cond-list" id="cond-grid"></div>
+</div>
+
+<!-- edit combatant -->
+<div id="dlg" class="overlay hidden">
+  <div class="modal">
+    <h2 id="dlg-title">Edit combatant</h2>
+    <div class="row">
+      <div class="field">
+        <label>Icon</label>
+        <button type="button" id="d-icon" class="icon-btn">👹</button>
+      </div>
+      <div class="field" style="flex:1;min-width:170px">
+        <label>Name</label>
+        <input type="text" id="d-name" style="width:100%">
+      </div>
+      <div class="field">
+        <label>Side</label>
+        <select id="d-type">
+          <option value="player">Player</option>
+          <option value="ally">Ally / NPC</option>
+          <option value="enemy">Enemy</option>
+        </select>
+      </div>
+    </div>
+    <div class="row">
+      <div class="field"><label>Initiative</label><input type="number" id="d-init" style="width:88px"></div>
+      <div class="field"><label>Dex mod</label><input type="number" id="d-mod" style="width:72px"></div>
+      <div class="field"><label>AC</label><input type="number" id="d-ac" min="0" style="width:72px"></div>
+      <div class="field"><label>Current HP</label><input type="number" id="d-hp" min="0" style="width:92px"></div>
+      <div class="field"><label>Max HP</label><input type="number" id="d-maxhp" min="0" style="width:88px"></div>
+      <div class="field"><label>Temp HP</label><input type="number" id="d-temp" min="0" style="width:82px"></div>
+    </div>
+    <div class="field" style="margin-bottom:12px">
+      <label>Notes</label>
+      <textarea id="d-notes" placeholder="Resistant to fire · breath weapon recharges on 5–6 · flies 60 ft."></textarea>
+    </div>
+    <div class="field">
+      <label>Conditions</label>
+      <div class="cond-list" id="d-conds" style="max-height:200px"></div>
+    </div>
+    <div class="modal-foot">
+      <button type="button" id="d-delete" class="btn-ghost">Remove from battle</button>
+      <div class="spacer"></div>
+      <button type="button" id="d-cancel">Cancel</button>
+      <button type="button" id="d-save" class="btn-blood">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- tie-breaker -->
+<div id="tie" class="overlay hidden">
+  <div class="modal" style="max-width:460px">
+    <h2>Initiative tie</h2>
+    <p class="tie-say" id="tie-say"></p>
+    <div class="tie-list" id="tie-list"></div>
+    <div class="modal-foot">
+      <button type="button" id="tie-never" class="btn-ghost">Stop asking</button>
+      <div class="spacer"></div>
+      <button type="button" id="tie-players">Players first</button>
+      <button type="button" id="tie-keep">Keep as is</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  const STORE = "dnd-initiative-v3";
+  const OLD_STORE = "dnd-initiative-v2";
+
+  const EMOJI = ["🧝","🧙","🛡","⚔","🏹","🗡","🪓","🔮","🐺","🐉","👹","👺","💀","🧟","🧛","👻",
+                 "🕷","🦇","🐻","🐗","🦅","🐍","🦂","🦈","🐙","🦑","🧌","👽","🤖","🔥","❄","⚡",
+                 "🧚","🧜","🧞","🦉","🐈","🐴","🦌","🐀","🕸","🍄","📜","💰","🗿","🌳"];
+  const DEFAULT_ICON = {player:"🧝", ally:"🛡", enemy:"👹"};
+
+  // These characters default to TEXT presentation in Unicode, so platforms draw them as flat
+  // monochrome glyphs unless U+FE0F asks for the emoji form. Applied at render time only, so
+  // what we store and compare stays the plain character.
+  const TEXT_DEFAULT = new Set(["⚔","🛡","🗡","🕷","🕸","🕶","⛓","⬇","❄","🖼","✊","✨","⚡","💨"]);
+  const emo = ch => (ch && TEXT_DEFAULT.has(ch)) ? ch + "️" : ch;
+
+  const CONDITIONS = [
+    {k:"blinded",       e:"🕶", n:"Blinded"},
+    {k:"charmed",       e:"💞", n:"Charmed"},
+    {k:"deafened",      e:"🔇", n:"Deafened"},
+    {k:"frightened",    e:"😱", n:"Frightened"},
+    {k:"grappled",      e:"✊", n:"Grappled"},
+    {k:"incapacitated", e:"💫", n:"Incapacitated"},
+    {k:"invisible",     e:"👤", n:"Invisible"},
+    {k:"paralyzed",     e:"⚡", n:"Paralyzed"},
+    {k:"petrified",     e:"🗿", n:"Petrified"},
+    {k:"poisoned",      e:"🧪", n:"Poisoned"},
+    {k:"prone",         e:"⬇", n:"Prone"},
+    {k:"restrained",    e:"⛓", n:"Restrained"},
+    {k:"stunned",       e:"🌟", n:"Stunned"},
+    {k:"unconscious",   e:"😵", n:"Unconscious"},
+    {k:"exhaustion",    e:"🥱", n:"Exhaustion"},
+    {k:"concentrating", e:"🌀", n:"Concentrating"},
+    {k:"blessed",       e:"✨", n:"Blessed"},
+    {k:"hasted",        e:"💨", n:"Hasted"},
+    {k:"slowed",        e:"🐌", n:"Slowed"},
+    {k:"raging",        e:"🔥", n:"Raging"}
+  ];
+  const COND = {};
+  CONDITIONS.forEach(c => COND[c.k] = c);
+
+  const $ = s => document.querySelector(s);
+  const els = {
+    track:$("#track"), roundNum:$("#round-num"),
+    turnName:$("#turn-name"), turnMeta:$("#turn-meta"), btnNext:$("#btn-next"),
+    name:$("#f-name"), type:$("#f-type"), init:$("#f-init"), mod:$("#f-mod"),
+    ac:$("#f-ac"), hp:$("#f-hp"), qty:$("#f-qty"),
+    iconBtn:$("#icon-btn"), picker:$("#picker"), grid:$("#emoji-grid"),
+    upInput:$("#upload-input"),
+    condMenu:$("#cond-menu"), condGrid:$("#cond-grid"), condHead:$("#cond-head"),
+    chkTies:$("#chk-ties"),
+    dlg:$("#dlg"), tie:$("#tie"), tieList:$("#tie-list"), tieSay:$("#tie-say")
+  };
+
+  let state = load();
+  let pendingIcon = null;   // icon picked for the add-form (null = follow the Side dropdown)
+
+  /* ---------------- persistence ---------------- */
+  function normalize(s){
+    if(!s || !Array.isArray(s.combatants)) return null;
+    s.round = Math.max(0, parseInt(s.round, 10) || 0);
+    s.askTies = s.askTies !== false;
+    s.showHelp = s.showHelp !== false;
+    s.emojiFont = s.emojiFont === "universal" ? "universal" : "system";
+    s.combatants.forEach(c => {
+      c.ac      = c.ac      || 0;
+      c.tempHp  = c.tempHp  || 0;
+      c.notes   = c.notes   || "";
+      c.mod     = c.mod     || 0;
+      // conditions used to be bare keys; they now carry a rounds-remaining counter
+      c.conds = Array.isArray(c.conds) ? c.conds.map(x => {
+        if(typeof x === "string") return COND[x] ? {k:x, n:0} : null;
+        return (x && COND[x.k]) ? {k:x.k, n:Math.max(0, parseInt(x.n, 10) || 0)} : null;
+      }).filter(Boolean) : [];
+    });
+    return s;
+  }
+  function load(){
+    for(const key of [STORE, OLD_STORE]){
+      try{
+        const raw = localStorage.getItem(key);
+        if(raw){
+          const s = normalize(JSON.parse(raw));
+          if(s) return s;
+        }
+      }catch(e){ /* corrupt or blocked storage — fall through */ }
+    }
+    return { round:0, activeId:null, askTies:true, showHelp:true, emojiFont:"system", combatants:[] };
+  }
+  function save(){
+    try{ localStorage.setItem(STORE, JSON.stringify(state)); }catch(e){}
+  }
+
+  const uid = () => "c" + Math.random().toString(36).slice(2,9);
+  const d20 = () => 1 + Math.floor(Math.random()*20);
+  const clamp = (v,lo,hi) => Math.max(lo, Math.min(hi, v));
+  const sideColor = t => t === "enemy" ? "var(--enemy)" : t === "player" ? "var(--player)" : "var(--ally)";
+
+  /* ---------------- rendering ---------------- */
+  function render(){
+    const list = state.combatants;
+    if(state.activeId && !list.some(c => c.id === state.activeId)) state.activeId = null;
+    // round 0 means the fight hasn't begun, so nobody is up yet
+    if(state.round === 0) state.activeId = null;
+    else if(!state.activeId && list.length) state.activeId = list[0].id;
+
+    els.roundNum.textContent = state.round;
+    const a = list.find(c => c.id === state.activeId);
+    els.btnNext.textContent = state.round === 0 ? "Start Battle →" : "Next Turn →";
+    els.turnName.textContent = a ? a.name : (state.round === 0 && list.length ? "Not started" : "—");
+    els.turnName.style.color = a ? sideColor(a.type) : "var(--muted)";
+    els.turnMeta.innerHTML = a ? metaLine(a) : "";
+
+    els.track.innerHTML = "";
+    if(!list.length){
+      const p = document.createElement("div");
+      p.className = "empty";
+      p.innerHTML = "No one has rolled yet.<br>Add your players and monsters below to begin the encounter.";
+      els.track.appendChild(p);
+      return;
+    }
+    list.forEach(c => els.track.appendChild(cardEl(c)));
+  }
+
+  function metaLine(c){
+    const bits = [];
+    if(c.ac) bits.push('<span class="chip">AC ' + c.ac + '</span>');
+    if(c.maxHp) bits.push('<span class="chip">' + c.hp + " / " + c.maxHp + "</span>" +
+                          (c.tempHp ? ' <span style="color:var(--player)">+' + c.tempHp + " temp</span>" : ""));
+    if(c.conds.length) bits.push(c.conds.map(x =>
+      emo(COND[x.k].e) + " " + COND[x.k].n + (x.n > 0 ? " (" + x.n + ")" : "")).join(", "));
+    let out = bits.join(" &nbsp;·&nbsp; ");
+    if(c.notes) out += (out ? "<br>" : "") + '<span class="note">' + esc(c.notes) + "</span>";
+    return out;
+  }
+  function esc(s){
+    return String(s).replace(/[&<>"]/g, ch => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[ch]));
+  }
+
+  function cardEl(c){
+    const card = document.createElement("div");
+    card.className = "card";
+    card.dataset.id = c.id;
+    card.dataset.type = c.type;
+    if(c.id === state.activeId) card.classList.add("active");
+    if(c.maxHp > 0 && c.hp <= 0) card.classList.add("down");
+
+    const wrap = document.createElement("div");
+    wrap.className = "port-wrap";
+
+    const port = document.createElement("div");
+    port.className = "portrait";
+    if(c.img){
+      const im = document.createElement("img");
+      im.src = c.img; im.alt = "";
+      port.appendChild(im);
+    } else {
+      port.textContent = emo(c.icon);
+    }
+    wrap.appendChild(port);
+
+    // corner badges live OUTSIDE the clipped portrait, so nothing gets cut off
+    const badge = document.createElement("div");
+    badge.className = "init-badge";
+    badge.textContent = c.init;
+    badge.title = "Initiative — click to edit";
+    badge.addEventListener("click", () => editInit(c, badge));
+    wrap.appendChild(badge);
+
+    if(c.ac > 0){
+      const ac = document.createElement("div");
+      ac.className = "ac-badge";
+      ac.textContent = c.ac;
+      ac.title = "Armour Class " + c.ac;
+      wrap.appendChild(ac);
+    }
+
+    const rm = document.createElement("button");
+    rm.className = "corner-btn btn-remove";
+    rm.textContent = "×";
+    rm.title = "Remove " + c.name;
+    rm.addEventListener("click", e => {
+      e.stopPropagation();
+      state.combatants = state.combatants.filter(o => o.id !== c.id);
+      save(); render();
+    });
+    wrap.appendChild(rm);
+
+    const ed = document.createElement("button");
+    ed.className = "corner-btn btn-edit";
+    ed.textContent = "✎";
+    ed.title = "Edit stats & notes";
+    ed.addEventListener("click", e => { e.stopPropagation(); openDialog(c); });
+    wrap.appendChild(ed);
+
+    card.appendChild(wrap);
+
+    const nm = document.createElement("div");
+    nm.className = "name";
+    nm.textContent = c.name;
+    nm.title = c.notes ? c.name + " — " + c.notes : c.name;
+    card.appendChild(nm);
+
+    card.appendChild(condRow(c));
+    if(c.maxHp > 0) card.appendChild(hpEl(c));
+
+    card.addEventListener("pointerdown", e => onPointerDown(e, card));
+    return card;
+  }
+
+  function condRow(c){
+    const row = document.createElement("div");
+    row.className = "cond-row";
+    row.title = "Click to set conditions";
+    if(c.conds.length){
+      c.conds.forEach(x => {
+        const s = document.createElement("span");
+        s.className = "chip";
+        s.innerHTML = '<span class="emo">' + emo(COND[x.k].e) + "</span>" +
+                      (x.n > 0 ? '<b class="n">' + x.n + "</b>" : "");
+        s.title = COND[x.k].n + (x.n > 0 ? " — " + x.n + " round" + (x.n === 1 ? "" : "s") + " left"
+                                         : " — no time limit");
+        row.appendChild(s);
+      });
+    }
+    if(c.notes){
+      const s = document.createElement("span");
+      s.className = "chip";
+      s.textContent = "📝";
+      s.title = c.notes;
+      row.appendChild(s);
+    }
+    if(!c.conds.length){
+      const a = document.createElement("span");
+      a.className = "add";
+      a.textContent = "+ condition";
+      row.appendChild(a);
+    }
+    row.addEventListener("click", e => { e.stopPropagation(); openCondMenu(c, row); });
+    return row;
+  }
+
+  function hpEl(c){
+    const wrap = document.createElement("div");
+    wrap.className = "hp";
+    wrap.title = "Click, then type -7  ·  +4  ·  22  ·  t8";
+
+    const bar = document.createElement("div");
+    bar.className = "hp-bar";
+    const pct = clamp((c.hp / c.maxHp) * 100, 0, 100);
+    const fill = document.createElement("div");
+    fill.className = "hp-fill" + (pct <= 25 ? " bad" : pct <= 50 ? " warn" : "");
+    fill.style.width = pct + "%";
+    bar.appendChild(fill);
+    if(c.tempHp > 0){
+      const t = document.createElement("div");
+      t.className = "hp-temp";
+      t.style.width = clamp((c.tempHp / c.maxHp) * 100, 0, 100 - pct) + "%";
+      bar.appendChild(t);
+    }
+    wrap.appendChild(bar);
+
+    const txt = document.createElement("div");
+    txt.className = "hp-txt";
+    txt.innerHTML = c.hp + " / " + c.maxHp +
+      (c.tempHp > 0 ? ' <span class="tmp">+' + c.tempHp + "</span>" : "");
+    wrap.appendChild(txt);
+
+    wrap.addEventListener("click", e => { e.stopPropagation(); editHp(c, wrap); });
+    return wrap;
+  }
+
+  /* ---------------- inline editing ---------------- */
+  function inlineInput(host, value, placeholder, commit){
+    const inp = document.createElement("input");
+    inp.type = "text";
+    inp.value = value;
+    if(placeholder) inp.placeholder = placeholder;
+    host.appendChild(inp);
+    inp.focus(); inp.select();
+    const done = () => { commit(inp.value); save(); render(); };
+    inp.addEventListener("blur", done);
+    inp.addEventListener("keydown", e => {
+      e.stopPropagation();
+      if(e.key === "Enter") done();
+      if(e.key === "Escape"){ inp.removeEventListener("blur", done); render(); }
+    });
+    inp.addEventListener("pointerdown", e => e.stopPropagation());
+    inp.addEventListener("click", e => e.stopPropagation());
+    return inp;
+  }
+
+  function editInit(c, badge){
+    if(badge.querySelector("input")) return;
+    const before = c.init;
+    badge.textContent = "";
+    inlineInput(badge, c.init, "", v => {
+      const n = parseInt(v, 10);
+      if(!isNaN(n) && n !== before){
+        c.init = n;
+        maybeAskTies([c.id]);
+      }
+    });
+  }
+
+  function editHp(c, wrap){
+    if(wrap.querySelector("input")) return;
+    inlineInput(wrap, "", "-7 +4 22 t8", raw => {
+      raw = raw.trim();
+      if(!raw) return;
+      if(/^t/i.test(raw)){                       // t8 → grant 8 temporary HP
+        const n = parseInt(raw.slice(1), 10);
+        if(!isNaN(n)) c.tempHp = Math.max(0, n);
+        return;
+      }
+      const n = parseInt(raw.replace(/^\+/, ""), 10);
+      if(isNaN(n)) return;
+      if(/^-/.test(raw)){                        // damage: temp HP absorbs it first
+        let dmg = -n;
+        const fromTemp = Math.min(c.tempHp, dmg);
+        c.tempHp -= fromTemp;
+        c.hp = Math.max(0, c.hp - (dmg - fromTemp));
+      } else if(/^\+/.test(raw)){
+        c.hp = clamp(c.hp + n, 0, c.maxHp);
+      } else {
+        c.hp = clamp(n, 0, c.maxHp);
+      }
+    });
+  }
+
+  /* ---------------- drag to reorder ---------------- */
+  let drag = null;
+  const GAP = 16;
+
+  function onPointerDown(e, card){
+    if(e.pointerType === "mouse" && e.button !== 0) return;
+    if(e.target.closest("input,button,.hp,.init-badge,.cond-row")) return;
+
+    const cards = Array.from(els.track.querySelectorAll(".card"));
+    const idx = cards.indexOf(card);
+    if(idx < 0) return;
+
+    drag = {
+      card, cards, idx, newIdx: idx, moved: false,
+      startX: e.clientX, startY: e.clientY,
+      startScroll: els.track.scrollLeft,
+      centers: cards.map(c => c.offsetLeft + c.offsetWidth / 2),
+      width: card.offsetWidth,
+      lastX: e.clientX,
+      raf: 0
+    };
+    card.setPointerCapture(e.pointerId);
+    card.addEventListener("pointermove", onPointerMove);
+    card.addEventListener("pointerup", onPointerUp);
+    card.addEventListener("pointercancel", onPointerUp);
+  }
+
+  function onPointerMove(e){
+    if(!drag) return;
+    drag.lastX = e.clientX;
+    if(!drag.moved){
+      if(Math.hypot(e.clientX - drag.startX, e.clientY - drag.startY) < 6) return;
+      drag.moved = true;
+      drag.card.classList.add("dragging");
+      document.body.classList.add("is-dragging");
+      drag.raf = requestAnimationFrame(autoScroll);
+    }
+    updateDrag();
+  }
+
+  function updateDrag(){
+    const t = els.track;
+    const dx = (drag.lastX - drag.startX) + (t.scrollLeft - drag.startScroll);
+    drag.card.style.transform = "translateX(" + dx + "px) scale(1.06)";
+
+    const cursor = drag.lastX - t.getBoundingClientRect().left + t.scrollLeft;
+    let n = 0;
+    for(let i = 0; i < drag.centers.length; i++){
+      if(i !== drag.idx && cursor > drag.centers[i]) n++;
+    }
+    drag.newIdx = n;
+
+    const shift = drag.width + GAP;
+    drag.cards.forEach((c, i) => {
+      if(i === drag.idx) return;
+      let s = 0;
+      if(drag.idx < drag.newIdx && i > drag.idx && i <= drag.newIdx) s = -shift;
+      else if(drag.idx > drag.newIdx && i >= drag.newIdx && i < drag.idx) s = shift;
+      c.style.transform = s ? "translateX(" + s + "px)" : "";
+    });
+  }
+
+  function autoScroll(){
+    if(!drag || !drag.moved) return;
+    const t = els.track, r = t.getBoundingClientRect(), edge = 70;
+    let v = 0;
+    if(drag.lastX < r.left + edge) v = -Math.min(14, (r.left + edge - drag.lastX) / 4);
+    else if(drag.lastX > r.right - edge) v = Math.min(14, (drag.lastX - (r.right - edge)) / 4);
+    if(v){
+      const before = t.scrollLeft;
+      t.scrollLeft += v;
+      if(t.scrollLeft !== before) updateDrag();
+    }
+    drag.raf = requestAnimationFrame(autoScroll);
+  }
+
+  function onPointerUp(){
+    if(!drag) return;
+    const d = drag;
+    drag = null;
+    cancelAnimationFrame(d.raf);
+    d.card.removeEventListener("pointermove", onPointerMove);
+    d.card.removeEventListener("pointerup", onPointerUp);
+    d.card.removeEventListener("pointercancel", onPointerUp);
+    document.body.classList.remove("is-dragging");
+
+    if(!d.moved){                       // a plain click: jump the turn to this combatant
+      state.activeId = d.card.dataset.id;
+      if(state.round === 0) state.round = 1;   // tapping someone also starts the fight
+      save(); render();
+      return;
+    }
+    if(d.newIdx !== d.idx){
+      const arr = state.combatants;
+      const [item] = arr.splice(d.idx, 1);
+      arr.splice(d.newIdx, 0, item);
+      save();
+    }
+    d.card.classList.remove("dragging");
+    render();
+  }
+
+  /* ---------------- turn flow ---------------- */
+  // A timed condition counts down as its owner's turn ends, and drops off when it hits zero.
+  // A blank counter means "until I say so" and never ticks.
+  function tickConditions(c){
+    if(!c) return;
+    c.conds = c.conds.filter(x => {
+      if(x.n > 0){ x.n--; return x.n > 0; }
+      return true;
+    });
+  }
+
+  function step(dir){
+    const list = state.combatants;
+    if(!list.length) return;
+
+    if(dir > 0 && state.round === 0){          // round 0 → the fight begins
+      state.round = 1;
+      state.activeId = list[0].id;
+      save(); render(); scrollToActive();
+      return;
+    }
+
+    let i = list.findIndex(c => c.id === state.activeId);
+    if(i < 0) i = 0;
+    else{
+      if(dir > 0) tickConditions(list[i]);
+      i += dir;
+      if(i >= list.length){ i = 0; state.round++; }
+      if(i < 0){
+        if(state.round <= 1){                  // stepping back off the top un-starts the battle
+          state.round = 0; state.activeId = null;
+          save(); render();
+          return;
+        }
+        i = list.length - 1; state.round--;
+      }
+    }
+    state.activeId = list[i].id;
+    save(); render(); scrollToActive();
+  }
+
+  function scrollToActive(){
+    const el = els.track.querySelector('.card[data-id="' + state.activeId + '"]');
+    if(el) el.scrollIntoView({behavior:"smooth", block:"nearest", inline:"center"});
+  }
+
+  /* ---------------- adding ---------------- */
+  function insertByInit(c){
+    const at = state.combatants.findIndex(o => o.init < c.init);
+    if(at < 0) state.combatants.push(c);
+    else state.combatants.splice(at, 0, c);
+  }
+  function sortByInit(){
+    state.combatants = state.combatants
+      .map((c, i) => ({c, i}))
+      .sort((a, b) => (b.c.init - a.c.init) || (a.i - b.i))
+      .map(o => o.c);
+  }
+
+  function addCombatants(){
+    const base = els.name.value.trim();
+    if(!base){ els.name.focus(); return; }
+
+    const type  = els.type.value;
+    const mod   = parseInt(els.mod.value, 10) || 0;
+    const ac    = parseInt(els.ac.value, 10) || 0;
+    const maxHp = parseInt(els.hp.value, 10) || 0;
+    const qty   = clamp(parseInt(els.qty.value, 10) || 1, 1, 20);
+    const fixed = els.init.value.trim() === "" ? null : parseInt(els.init.value, 10);
+    const added = [];
+
+    for(let i = 0; i < qty; i++){
+      const c = {
+        id: uid(),
+        name: qty > 1 ? base + " " + (i + 1) : base,
+        type,
+        icon: pendingIcon && !pendingIcon.startsWith("data:") ? pendingIcon : DEFAULT_ICON[type],
+        img:  pendingIcon && pendingIcon.startsWith("data:")  ? pendingIcon : null,
+        init: (fixed !== null && !isNaN(fixed)) ? fixed : d20() + mod,
+        mod, ac,
+        hp: maxHp, maxHp, tempHp: 0,
+        notes: "", conds: []
+      };
+      insertByInit(c);
+      added.push(c.id);
+    }
+
+    els.name.value = ""; els.init.value = ""; els.qty.value = 1;
+    pendingIcon = null;
+    syncIconBtn();
+    save(); render();
+    els.name.focus();
+    maybeAskTies(added);
+  }
+
+  /* ---------------- tie-breaking ---------------- */
+  let tieQueue = [], tiePicked = [], tieGroup = null;
+
+  function maybeAskTies(affectedIds){
+    if(!state.askTies) return;
+    const groups = new Map();
+    state.combatants.forEach(c => {
+      if(!groups.has(c.init)) groups.set(c.init, []);
+      groups.get(c.init).push(c);
+    });
+    tieQueue = [...groups.entries()]
+      .filter(([, g]) => g.length > 1 && (!affectedIds || g.some(c => affectedIds.includes(c.id))))
+      .sort((a, b) => b[0] - a[0])
+      .map(([, g]) => g);
+    nextTie();
+  }
+
+  function nextTie(){
+    tieGroup = tieQueue.shift() || null;
+    if(!tieGroup){ els.tie.classList.add("hidden"); return; }
+    // members may have been removed since the queue was built
+    tieGroup = tieGroup.filter(c => state.combatants.includes(c));
+    if(tieGroup.length < 2) return nextTie();
+
+    tiePicked = [];
+    els.tieSay.innerHTML = tieGroup.length + " combatants rolled <b style='color:var(--accent)'>" +
+      tieGroup[0].init + "</b>. Click them in the order they should act — or pick a shortcut below.";
+    renderTie();
+    els.tie.classList.remove("hidden");
+  }
+
+  function renderTie(){
+    els.tieList.innerHTML = "";
+    tieGroup.forEach(c => {
+      const b = document.createElement("button");
+      b.className = "tie-chip";
+      const pos = tiePicked.indexOf(c.id);
+      if(pos >= 0) b.classList.add("picked");
+      b.innerHTML = '<span class="ord">' + (pos >= 0 ? pos + 1 : "·") + "</span>" +
+                    '<span class="emo">' + emo(c.img ? "🖼" : c.icon) + "</span>" +
+                    "<span>" + esc(c.name) + "</span>";
+      b.addEventListener("click", () => {
+        const at = tiePicked.indexOf(c.id);
+        if(at >= 0) tiePicked.splice(at, 1);
+        else tiePicked.push(c.id);
+        if(tiePicked.length === tieGroup.length){
+          applyTieOrder(tiePicked);
+          save(); render(); nextTie();
+        } else renderTie();
+      });
+      els.tieList.appendChild(b);
+    });
+  }
+
+  function applyTieOrder(ids){
+    const objs = ids.map(id => state.combatants.find(c => c.id === id)).filter(Boolean);
+    const slots = objs.map(o => state.combatants.indexOf(o)).sort((a, b) => a - b);
+    slots.forEach((slot, i) => { state.combatants[slot] = objs[i]; });
+  }
+
+  $("#tie-players").addEventListener("click", () => {
+    const rank = {player:0, ally:1, enemy:2};
+    const ordered = tieGroup
+      .map((c, i) => ({c, i}))
+      .sort((a, b) => (rank[a.c.type] - rank[b.c.type]) || (a.i - b.i))
+      .map(o => o.c.id);
+    applyTieOrder(ordered);
+    save(); render(); nextTie();
+  });
+  $("#tie-keep").addEventListener("click", nextTie);
+  $("#tie-never").addEventListener("click", () => {
+    state.askTies = false;
+    els.chkTies.checked = false;
+    tieQueue = [];
+    save();
+    els.tie.classList.add("hidden");
+  });
+
+  /* ---------------- conditions popup ---------------- */
+  let condTarget = null;
+
+  function openCondMenu(c, anchor){
+    condTarget = c;
+    els.condHead.innerHTML = "Conditions — " + esc(c.name) +
+      '<span style="float:right;text-transform:none;letter-spacing:0">rounds</span>';
+    renderCondList(els.condGrid, c, () => { save(); render(); });
+    els.condMenu.classList.remove("hidden");
+    placePop(els.condMenu, anchor);
+  }
+
+  // `holder` is anything with a .conds array — a combatant, or the dialog's working copy.
+  // onChange saves and repaints the cards; it must never redraw this list, or typing loses focus.
+  function renderCondList(host, holder, onChange){
+    host.innerHTML = "";
+    CONDITIONS.forEach(cd => {
+      const item = document.createElement("div");
+      item.className = "cond-item";
+      const cur = holder.conds.find(x => x.k === cd.k);
+
+      const tog = document.createElement("button");
+      tog.type = "button";
+      tog.className = "cond-tog" + (cur ? " on" : "");
+      tog.innerHTML = '<span class="emo">' + emo(cd.e) + "</span><span>" + cd.n + "</span>";
+      tog.addEventListener("click", e => {
+        e.stopPropagation();
+        const at = holder.conds.findIndex(x => x.k === cd.k);
+        if(at >= 0) holder.conds.splice(at, 1);
+        else holder.conds.push({k:cd.k, n:0});
+        renderCondList(host, holder, onChange);
+        if(onChange) onChange();
+      });
+      item.appendChild(tog);
+
+      const n = document.createElement("input");
+      n.type = "text";
+      n.className = "cond-n";
+      n.placeholder = "∞";
+      n.title = "Rounds remaining — leave blank to keep it until you remove it";
+      n.value = cur && cur.n > 0 ? cur.n : "";
+      n.disabled = !cur;
+      n.addEventListener("click", e => e.stopPropagation());
+      n.addEventListener("keydown", e => e.stopPropagation());
+      n.addEventListener("input", () => {
+        const t = holder.conds.find(x => x.k === cd.k);
+        if(!t) return;
+        const v = parseInt(n.value, 10);
+        t.n = (!isNaN(v) && v > 0) ? v : 0;
+        if(onChange) onChange();
+      });
+      item.appendChild(n);
+      host.appendChild(item);
+    });
+  }
+
+  function placePop(pop, anchor){
+    const r = anchor.getBoundingClientRect();
+    pop.style.visibility = "hidden";
+    pop.classList.remove("hidden");
+    const w = pop.offsetWidth, h = pop.offsetHeight;
+    let left = r.left, top = r.bottom + 6;
+    if(left + w > innerWidth - 10) left = innerWidth - w - 10;
+    if(left < 10) left = 10;
+    if(top + h > innerHeight - 10) top = Math.max(10, r.top - h - 6);
+    pop.style.left = left + "px";
+    pop.style.top = top + "px";
+    pop.style.visibility = "";
+  }
+
+  /* ---------------- edit dialog ---------------- */
+  let dlgTarget = null, dlgIcon = null;
+  const D = {
+    icon:$("#d-icon"), name:$("#d-name"), type:$("#d-type"), init:$("#d-init"),
+    mod:$("#d-mod"), ac:$("#d-ac"), hp:$("#d-hp"), maxhp:$("#d-maxhp"),
+    temp:$("#d-temp"), notes:$("#d-notes"), conds:$("#d-conds"), title:$("#dlg-title")
+  };
+
+  function openDialog(c){
+    dlgTarget = c;
+    dlgIcon = c.img || c.icon;
+    D.title.textContent = "Edit — " + c.name;
+    D.name.value = c.name;  D.type.value = c.type;
+    D.init.value = c.init;  D.mod.value = c.mod;
+    D.ac.value = c.ac || ""; D.hp.value = c.hp;
+    D.maxhp.value = c.maxHp; D.temp.value = c.tempHp || "";
+    D.notes.value = c.notes;
+    dlgConds = c.conds.map(x => ({k:x.k, n:x.n}));
+    renderCondList(D.conds, {conds:dlgConds});
+    syncDlgIcon();
+    els.dlg.classList.remove("hidden");
+    D.name.focus();
+  }
+  let dlgConds = [];
+
+  function syncDlgIcon(){
+    D.icon.innerHTML = "";
+    if(dlgIcon && dlgIcon.startsWith("data:")){
+      const im = document.createElement("img"); im.src = dlgIcon; D.icon.appendChild(im);
+    } else D.icon.textContent = emo(dlgIcon || DEFAULT_ICON[D.type.value]);
+  }
+
+  function closeDialog(){ els.dlg.classList.add("hidden"); dlgTarget = null; }
+
+  $("#d-save").addEventListener("click", () => {
+    const c = dlgTarget;
+    if(!c) return;
+    const before = c.init;
+    c.name  = D.name.value.trim() || c.name;
+    c.type  = D.type.value;
+    c.init  = parseInt(D.init.value, 10) || 0;
+    c.mod   = parseInt(D.mod.value, 10) || 0;
+    c.ac    = Math.max(0, parseInt(D.ac.value, 10) || 0);
+    c.maxHp = Math.max(0, parseInt(D.maxhp.value, 10) || 0);
+    c.hp    = clamp(parseInt(D.hp.value, 10) || 0, 0, c.maxHp);
+    c.tempHp= Math.max(0, parseInt(D.temp.value, 10) || 0);
+    c.notes = D.notes.value.trim();
+    c.conds = dlgConds.map(x => ({k:x.k, n:x.n}));
+    if(dlgIcon && dlgIcon.startsWith("data:")){ c.img = dlgIcon; }
+    else { c.img = null; c.icon = dlgIcon || DEFAULT_ICON[c.type]; }
+    closeDialog();
+    save(); render();
+    if(c.init !== before) maybeAskTies([c.id]);
+  });
+  $("#d-cancel").addEventListener("click", closeDialog);
+  $("#d-delete").addEventListener("click", () => {
+    if(!dlgTarget) return;
+    if(!confirm("Remove " + dlgTarget.name + " from the battle?")) return;
+    state.combatants = state.combatants.filter(o => o.id !== dlgTarget.id);
+    closeDialog(); save(); render();
+  });
+  D.type.addEventListener("change", () => {
+    if(!dlgIcon || !dlgIcon.startsWith("data:")){
+      // only auto-swap the icon if it was still the side's default
+      if(Object.values(DEFAULT_ICON).includes(dlgIcon)){ dlgIcon = DEFAULT_ICON[D.type.value]; syncDlgIcon(); }
+    }
+  });
+  D.icon.addEventListener("click", e => {
+    e.stopPropagation();
+    openPicker(D.icon, v => { dlgIcon = v; syncDlgIcon(); });
+  });
+  els.dlg.addEventListener("click", e => { if(e.target === els.dlg) closeDialog(); });
+
+  /* ---------------- icon picker ---------------- */
+  let pickerCb = null;
+
+  function openPicker(anchor, cb){
+    pickerCb = cb;
+    placePop(els.picker, anchor);
+  }
+  function syncIconBtn(){
+    els.iconBtn.innerHTML = "";
+    if(pendingIcon && pendingIcon.startsWith("data:")){
+      const im = document.createElement("img"); im.src = pendingIcon; els.iconBtn.appendChild(im);
+    } else els.iconBtn.textContent = emo(pendingIcon || DEFAULT_ICON[els.type.value]);
+  }
+
+  EMOJI.forEach(em => {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.textContent = emo(em);
+    b.addEventListener("click", () => {
+      if(pickerCb) pickerCb(em);
+      els.picker.classList.add("hidden");
+    });
+    els.grid.appendChild(b);
+  });
+
+  // shrink uploaded art to a small square so localStorage stays happy
+  function readImage(file){
+    const fr = new FileReader();
+    fr.onload = () => {
+      const img = new Image();
+      img.onload = () => {
+        const S = 160;
+        const cv = document.createElement("canvas");
+        cv.width = cv.height = S;
+        const ctx = cv.getContext("2d");
+        const side = Math.min(img.width, img.height);
+        ctx.drawImage(img, (img.width - side)/2, (img.height - side)/2, side, side, 0, 0, S, S);
+        if(pickerCb) pickerCb(cv.toDataURL("image/jpeg", 0.82));
+        els.picker.classList.add("hidden");
+      };
+      img.src = fr.result;
+    };
+    fr.readAsDataURL(file);
+  }
+
+  els.iconBtn.addEventListener("click", e => {
+    e.stopPropagation();
+    if(!els.picker.classList.contains("hidden") && pickerCb === setPendingIcon){
+      els.picker.classList.add("hidden");
+    } else openPicker(els.iconBtn, setPendingIcon);
+  });
+  function setPendingIcon(v){ pendingIcon = v; syncIconBtn(); }
+
+  els.picker.addEventListener("click", e => e.stopPropagation());
+  els.condMenu.addEventListener("click", e => e.stopPropagation());
+  document.addEventListener("click", () => {
+    els.picker.classList.add("hidden");
+    els.condMenu.classList.add("hidden");
+  });
+  $("#upload-btn").addEventListener("click", e => { e.stopPropagation(); els.upInput.click(); });
+  els.upInput.addEventListener("change", e => {
+    if(e.target.files && e.target.files[0]) readImage(e.target.files[0]);
+    e.target.value = "";
+  });
+
+  /* ---------------- toolbar & keys ---------------- */
+  $("#btn-next").addEventListener("click", e => { e.currentTarget.blur(); step(1); });
+  $("#btn-prev").addEventListener("click", e => { e.currentTarget.blur(); step(-1); });
+  $("#btn-add").addEventListener("click", addCombatants);
+  $("#btn-roll").addEventListener("click", () => {
+    els.init.value = d20() + (parseInt(els.mod.value, 10) || 0);
+  });
+  $("#btn-sort").addEventListener("click", () => { sortByInit(); save(); render(); });
+
+  $("#btn-reroll").addEventListener("click", () => {
+    if(!state.combatants.length) return;
+    if(!confirm("Reroll initiative for everyone in the battle?")) return;
+    state.combatants.forEach(c => { c.init = d20() + (c.mod || 0); });
+    sortByInit();
+    state.round = 0;
+    state.activeId = null;
+    save(); render(); maybeAskTies(null);
+  });
+
+  $("#btn-newfight").addEventListener("click", () => {
+    if(!state.combatants.length) return;
+    if(!confirm("Start a new battle? Every player and NPC stays on the board — with full HP, no conditions, fresh initiative and the round back to 0.")) return;
+    state.combatants.forEach(c => {
+      c.init = d20() + (c.mod || 0);
+      c.hp = c.maxHp;
+      c.tempHp = 0;
+      c.conds = [];
+    });
+    sortByInit();
+    state.round = 0;
+    state.activeId = null;
+    save(); render(); maybeAskTies(null);
+  });
+
+  $("#btn-clear").addEventListener("click", () => {
+    if(!state.combatants.length) return;
+    if(!confirm("Remove every player and NPC from the tracker and reset to round 0?")) return;
+    state = { round:0, activeId:null, askTies:state.askTies, showHelp:state.showHelp,
+              emojiFont:state.emojiFont, combatants:[] };
+    save(); render();
+  });
+
+  /* Universal icons: one downloaded emoji set, so a portrait looks the same on every device.
+     The font is only fetched if you actually pick it, and the browser caches it after that. */
+  let emoFontLinked = false;
+  function applyEmojiMode(){
+    const universal = state.emojiFont === "universal";
+    document.body.classList.toggle("emo-web", universal);
+    if(universal && !emoFontLinked){
+      const l = document.createElement("link");
+      l.rel = "stylesheet";
+      l.href = "https://fonts.googleapis.com/css2?family=Noto+Color+Emoji&display=swap";
+      document.head.appendChild(l);
+      emoFontLinked = true;
+    }
+    $("#sel-emoji").value = state.emojiFont;
+  }
+  $("#sel-emoji").addEventListener("change", e => {
+    state.emojiFont = e.target.value;
+    save(); applyEmojiMode();
+  });
+
+  function applyHelp(){
+    document.body.classList.toggle("no-help", !state.showHelp);
+    $("#btn-help").textContent = state.showHelp ? "✕ Hide help" : "? Help";
+  }
+  $("#btn-help").addEventListener("click", e => {
+    e.currentTarget.blur();
+    state.showHelp = !state.showHelp;
+    save(); applyHelp();
+  });
+
+  els.chkTies.addEventListener("change", () => { state.askTies = els.chkTies.checked; save(); });
+  els.type.addEventListener("change", () => { if(!pendingIcon) syncIconBtn(); });
+
+  [els.name, els.init, els.mod, els.ac, els.hp, els.qty].forEach(inp => {
+    inp.addEventListener("keydown", e => { if(e.key === "Enter") addCombatants(); });
+  });
+
+  const modalOpen = () => !els.dlg.classList.contains("hidden") || !els.tie.classList.contains("hidden");
+
+  document.addEventListener("keydown", e => {
+    if(e.key === "Escape"){
+      if(!els.picker.classList.contains("hidden") || !els.condMenu.classList.contains("hidden")){
+        els.picker.classList.add("hidden"); els.condMenu.classList.add("hidden"); return;
+      }
+      if(!els.dlg.classList.contains("hidden")) return closeDialog();
+      if(!els.tie.classList.contains("hidden")){ tieQueue = []; els.tie.classList.add("hidden"); }
+      return;
+    }
+    if(modalOpen()) return;
+    const t = e.target;
+    if(t && (t.tagName === "INPUT" || t.tagName === "SELECT" || t.tagName === "TEXTAREA")) return;
+    if(e.key === " " || e.key === "ArrowRight"){ e.preventDefault(); step(1); }
+    else if(e.key === "ArrowLeft"){ e.preventDefault(); step(-1); }
+  });
+
+  els.chkTies.checked = state.askTies !== false;
+  applyHelp();
+  applyEmojiMode();
+  syncIconBtn();
+  render();
+})();
+</script>
+</body>
+</html>
