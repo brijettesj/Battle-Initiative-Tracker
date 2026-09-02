@@ -1,6 +1,6 @@
 {
   "appId": "com.tabletopbattletracker.app",
-  "appName": "Battle Tracker",
+  "appName": "Roll Initiative",
   "webDir": "www",
   "backgroundColor": "#131413",
   "android": {

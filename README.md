@@ -1,4 +1,6 @@
-# Battle Tracker
+# Roll Initiative
+
+*A Dungeon Battle Tracker*
 
 An initiative and combat tracker for tabletop roleplaying games, built for running a fight at the
 table. Portraits sit in a row in initiative order, and you drag them to rearrange the order mid-battle.
@@ -154,7 +156,7 @@ npm run open:android          # rebuilds www/ and opens the project
 ```
 
 Then Run to sideload onto a connected phone, or Build ▸ Generate Signed Bundle for a release. The
-project is already at version `1.0.0`, build `1`, with the app name **Battle Tracker** and every
+project is already at version `1.0.0`, build `1`, with the app name **Roll Initiative** and every
 launcher and splash size generated from `resources/`.
 
 The iOS project is not created yet, because `npm run add:ios` only runs on macOS.

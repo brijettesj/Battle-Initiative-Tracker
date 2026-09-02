@@ -1,6 +1,6 @@
 {
-  "name": "Battle Tracker",
-  "short_name": "Battle Tracker",
+  "name": "Roll Initiative: A Dungeon Battle Tracker",
+  "short_name": "Roll Initiative",
   "description": "Initiative and combat tracker for tabletop roleplaying games.",
   "start_url": "./",
   "scope": "./",
