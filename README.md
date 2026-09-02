@@ -72,6 +72,7 @@ Note that each device keeps its own battle — a fight set up on a laptop won't 
 | `package.json` | Capacitor dependencies and the build scripts below. |
 | `logos/` | Source artwork. `ICON ONLY` is the splash mark, `ICON - TWO LINER` the full logo. |
 | `resources/` | The two source images every launcher and store size is generated from. |
+| `web/` | Manifest, service worker and icons that make `www/` installable from a browser. |
 | `android/` | The native Android project, committed so an update builds on what shipped. |
 
 ## Building the mobile app
@@ -136,7 +137,9 @@ the app bundle itself, so on iOS a new icon always means a new version going thr
 ### Testing it
 
 **In a browser**, on any phone at the table, no install and no accounts: serve the folder and open it,
-or share the published link.
+or share the published link. Served over HTTPS from a real host, a floating **Install** button appears
+and adds it to the home screen, after which it runs offline. Push to `main` deploys `www/` to GitHub
+Pages once Pages is switched on under Settings ▸ Pages ▸ Source ▸ GitHub Actions.
 
 ```sh
 npm run build
