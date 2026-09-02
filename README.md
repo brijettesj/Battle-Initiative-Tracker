@@ -1,4 +1,4 @@
-# ⚔️ Tabletop Battle Tracker 🐉
+# Battle Tracker
 
 An initiative and combat tracker for tabletop roleplaying games, built for running a fight at the
 table. Portraits sit in a row in initiative order, and you drag them to rearrange the order mid-battle.
