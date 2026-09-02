@@ -1,10 +1,10 @@
-# ⚔️ Dungeon Master's Battle Tracker 🐉
+# ⚔️ Tabletop Battle Tracker 🐉
 
-A single-file combat tracker for D&D 5e, built for running a fight at the table. Portraits sit in a
-row in initiative order the way *Baldur's Gate 3* shows them, and you drag them to rearrange the order
-mid-battle.
+An initiative and combat tracker for tabletop roleplaying games, built for running a fight at the
+table. Portraits sit in a row in initiative order, and you drag them to rearrange the order mid-battle.
 
-No install, no build step, no server. Open `index.html` in any browser.
+The whole application is one HTML file with no build step and no server. It makes no network requests
+at all: the typeface is embedded in the file, so it looks and works the same offline.
 
 ## Running it
 
@@ -22,7 +22,7 @@ Note that each device keeps its own battle — a fight set up on a laptop won't 
 - Drag any portrait left or right to rearrange the order. Whoever's turn it is stays their turn.
 - Tap a portrait to jump the current turn to that character.
 - When two combatants roll the same number, a prompt asks who goes first — with *Players first* as a
-  one-click answer. The prompts can be switched off.
+  one-click answer. The prompts can be switched off in Settings.
 
 **Rounds and turns**
 - The fight sits at **Round 0** until you press *Start Battle*. Both reset buttons return you there.
@@ -34,31 +34,70 @@ Note that each device keeps its own battle — a fight set up on a laptop won't 
 - At 0 HP a portrait greys out and shows a skull, but keeps its place in the order.
 
 **Conditions**
-- All 15 official conditions plus concentrating, blessed, hasted, slowed and raging.
+- All 15 conditions from the reference document, plus concentrating, blessed, hasted, slowed and raging.
 - Give one a duration and the counter ticks down at the end of that character's turn, dropping the
   condition automatically at zero. Leave it blank and it stays until you remove it.
 
 **Battle log**
-- A scrollable history under the initiative row: every hit, heal, temp HP, condition, reorder, turn
-  and roster change, newest first and grouped under sticky round headers.
+- A scrollable history in a rail beside the initiative row: every hit, heal, temp HP, condition,
+  reorder, turn and roster change, newest first and grouped under sticky round headers.
 - Answers "who took damage five turns ago?" without anyone relying on memory.
-- Folds away with a click; **Clear log** wipes the history without touching the fight.
+- Folds away with a click; **Clear** wipes the history without touching the fight.
 
 **Per-character detail**
 - Hover a portrait and click ✎ for AC, temporary HP, Dex modifier, notes and conditions.
 - Notes show as a 📝 chip on the card and in full in the banner on that character's turn.
 
-**Icons**
-- Pick from a fantasy emoji set, or upload your own art — it's cropped square and stored with the
-  character.
-- The *Icons* setting switches between your device's own emoji and one shared downloaded set, so the
-  tracker can look identical across devices.
+**Settings** — the ⚙ button in the top corner
+- *Text size* scales the entire interface, portraits and badges included, not just the labels. Four
+  steps from Small to Larger, for reading the tracker from across the table.
+- *Accent colour* — Blood, Ember, Arcane, Verdant, Frost or Slate. One choice recolours every fill,
+  badge, border and glow in the app.
+- *Icons* switches between your device's own emoji and one shared downloaded set, so the tracker can
+  look identical across devices. The shared set needs the internet once, then caches.
+- *Behaviour* holds the tie prompts, the help text, the battle log rail and a reduce-motion switch.
+- Every setting is remembered on the device, and undo never rolls one back.
 
 ## Layout
 
 | File | What it is |
 | --- | --- |
-| `index.html` | The entire application — markup, styles and script in one file. |
+| `index.html` | The entire application — markup, styles, embedded font and script in one file. |
+| `build.js` | Copies `index.html` into `www/`, the folder Capacitor packages. |
+| `capacitor.config.json` | App id, display name and native shell settings. |
+| `package.json` | Capacitor dependencies and the build scripts below. |
 
-The only external request is a Google Fonts stylesheet for the Cinzel display face, plus the optional
-emoji font if you turn on *Universal* icons. Both fall back cleanly with no internet.
+## Building the mobile app
+
+The app is wrapped with [Capacitor](https://capacitorjs.com), which puts the same HTML file inside a
+native shell and produces real Xcode and Android Studio projects.
+
+```sh
+npm install          # once
+npm run add:android  # creates android/ (needs Android Studio)
+npm run add:ios      # creates ios/ (macOS and Xcode only)
+
+npm run open:android # rebuild www/ and open the native project
+npm run open:ios
+```
+
+`npm run sync` rebuilds `www/` and pushes it into whichever native projects exist. Run it after every
+change to `index.html`.
+
+Before publishing, set `appId` in `capacitor.config.json` to a reverse-DNS identifier you control. It
+cannot be changed after an app is first submitted to either store.
+
+### Still to do before a store submission
+
+- **Storage.** State currently lives in `localStorage`, which a webview can clear under storage
+  pressure. Move it to `@capacitor/preferences` so a campaign roster cannot vanish.
+- **App icons and splash screens** at every size each store asks for.
+- **A privacy policy at a public URL.** Both stores require one even though this app collects nothing.
+
+## Licences and attribution
+
+The interface uses [Inter](https://rsms.me/inter/), embedded under the SIL Open Font License 1.1.
+
+Rules references come from the System Reference Document 5.1, used under the
+[Creative Commons Attribution 4.0 International](https://creativecommons.org/licenses/by/4.0/)
+licence. This project is not affiliated with, sponsored by, or endorsed by any game publisher.

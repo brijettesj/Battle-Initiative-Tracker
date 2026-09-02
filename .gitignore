@@ -14,3 +14,10 @@ $RECYCLE.BIN/
 # Scratch
 *.bak
 *.tmp
+
+# Node / Capacitor
+node_modules/
+www/
+ios/
+android/
+.gradle/

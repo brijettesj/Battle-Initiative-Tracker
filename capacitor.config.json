@@ -1,0 +1,15 @@
+{
+  "appId": "com.tabletopbattletracker.app",
+  "appName": "Tabletop Battle Tracker",
+  "webDir": "www",
+  "backgroundColor": "#131413",
+  "android": {
+    "backgroundColor": "#131413",
+    "allowMixedContent": false
+  },
+  "ios": {
+    "backgroundColor": "#131413",
+    "contentInset": "never",
+    "scrollEnabled": false
+  }
+}
