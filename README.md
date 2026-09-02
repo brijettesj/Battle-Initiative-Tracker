@@ -4,7 +4,7 @@ An initiative and combat tracker for tabletop roleplaying games, built for runni
 table. Portraits sit in a row in initiative order, and you drag them to rearrange the order mid-battle.
 
 The whole application is one HTML file with no build step and no server. It makes no network requests
-at all: the typeface is embedded in the file, so it looks and works the same offline.
+at all: both typefaces and the logo are embedded in the file, so it looks and works the same offline.
 
 ## Running it
 
@@ -14,6 +14,10 @@ Everything saves to the browser it's running in, so you can close the tab and pi
 Note that each device keeps its own battle — a fight set up on a laptop won't appear on a tablet.
 
 ## What it does
+
+**Launch**
+- The dragon mark holds the screen for three seconds and then fades into the tracker.
+- A tap, click or keypress skips it. The key that skips does not also advance the turn.
 
 **Initiative order**
 - Add players, allies and enemies with a name, side, AC and max HP.
@@ -66,6 +70,7 @@ Note that each device keeps its own battle — a fight set up on a laptop won't 
 | `build.js` | Copies `index.html` into `www/`, the folder Capacitor packages. |
 | `capacitor.config.json` | App id, display name and native shell settings. |
 | `package.json` | Capacitor dependencies and the build scripts below. |
+| `logos/` | Source artwork. `ICON ONLY` is the splash mark, `ICON - TWO LINER` the full logo. |
 
 ## Building the mobile app
 
@@ -135,7 +140,10 @@ the app bundle itself, so on iOS a new icon always means a new version going thr
 
 ## Licences and attribution
 
-The interface uses [Inter](https://rsms.me/inter/), embedded under the SIL Open Font License 1.1.
+Two typefaces are embedded, both under the SIL Open Font License 1.1:
+[Cormorant SC](https://fonts.google.com/specimen/Cormorant+SC) for headings and labels, chosen to match
+the wordmark in the logo, and [Inter](https://rsms.me/inter/) for body text, health totals and the
+battle log, where it stays readable at small sizes.
 
 Rules references come from the System Reference Document 5.1, used under the
 [Creative Commons Attribution 4.0 International](https://creativecommons.org/licenses/by/4.0/)
