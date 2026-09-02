@@ -87,6 +87,45 @@ change to `index.html`.
 Before publishing, set `appId` in `capacitor.config.json` to a reverse-DNS identifier you control. It
 cannot be changed after an app is first submitted to either store.
 
+The `ios/` and `android/` folders are committed on purpose. They carry the app icon, the version
+numbers and the store configuration, so a fresh clone can build the same app you last shipped.
+Signing keys are the exception and are gitignored — never commit a `.jks`, `.keystore` or `.p12`.
+
+### Shipping an update
+
+Updates are the normal case; nothing about the app is frozen once it is live except the `appId`.
+
+1. Edit `index.html`, then `npm run sync` to push the change into both native projects.
+2. **Raise the version in both projects.** Each has two numbers: one people see and one the store
+   uses to order uploads.
+   - Android, in `android/app/build.gradle`: `versionName "1.0.1"` and `versionCode 2`.
+   - iOS, in Xcode's General tab: *Version* `1.0.1` and *Build* `2`.
+3. Rebuild the signed bundle or archive, upload it, and submit. **Every update is reviewed again**,
+   usually within a day or two.
+
+`versionCode` and the iOS *Build* number must increase on every single upload, including a re-upload
+of otherwise identical code. Both stores reject a build whose number has been seen before.
+
+Roll out carefully rather than all at once. Google Play offers a staged rollout by percentage that
+you can halt, and Apple offers a phased release over seven days that you can pause. Neither can pull
+an update back off a phone that already installed it, so the pause is what limits the damage.
+
+### Changing the icon
+
+The icon is an ordinary asset, so it changes in any update.
+
+```sh
+mkdir -p resources                       # keep a 1024x1024 icon.png here
+npx @capacitor/assets generate           # writes every size into ios/ and android/
+npm run sync
+```
+
+Commit the regenerated icons, raise the version, rebuild and submit as above.
+
+One asymmetry between the stores. Google Play has a separate 512×512 listing icon, edited in the
+Play Console, which changes within hours and needs no new build. Apple takes the listing icon from
+the app bundle itself, so on iOS a new icon always means a new version going through review.
+
 ### Still to do before a store submission
 
 - **Storage.** State currently lives in `localStorage`, which a webview can clear under storage
