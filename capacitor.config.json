@@ -1,6 +1,6 @@
 {
   "appId": "com.tabletopbattletracker.app",
-  "appName": "Tabletop Battle Tracker",
+  "appName": "Battle Tracker",
   "webDir": "www",
   "backgroundColor": "#131413",
   "android": {

@@ -71,6 +71,8 @@ Note that each device keeps its own battle — a fight set up on a laptop won't 
 | `capacitor.config.json` | App id, display name and native shell settings. |
 | `package.json` | Capacitor dependencies and the build scripts below. |
 | `logos/` | Source artwork. `ICON ONLY` is the splash mark, `ICON - TWO LINER` the full logo. |
+| `resources/` | The two source images every launcher and store size is generated from. |
+| `android/` | The native Android project, committed so an update builds on what shipped. |
 
 ## Building the mobile app
 
@@ -131,12 +133,35 @@ One asymmetry between the stores. Google Play has a separate 512×512 listing ic
 Play Console, which changes within hours and needs no new build. Apple takes the listing icon from
 the app bundle itself, so on iOS a new icon always means a new version going through review.
 
+### Testing it
+
+**In a browser**, on any phone at the table, no install and no accounts: serve the folder and open it,
+or share the published link.
+
+```sh
+npm run build
+npx http-server www -p 8080
+```
+
+**On an Android device**, once [Android Studio](https://developer.android.com/studio) and a JDK are
+installed:
+
+```sh
+npm run open:android          # rebuilds www/ and opens the project
+```
+
+Then Run to sideload onto a connected phone, or Build ▸ Generate Signed Bundle for a release. The
+project is already at version `1.0.0`, build `1`, with the app name **Battle Tracker** and every
+launcher and splash size generated from `resources/`.
+
+The iOS project is not created yet, because `npm run add:ios` only runs on macOS.
+
 ### Still to do before a store submission
 
 - **Storage.** State currently lives in `localStorage`, which a webview can clear under storage
   pressure. Move it to `@capacitor/preferences` so a campaign roster cannot vanish.
-- **App icons and splash screens** at every size each store asks for.
 - **A privacy policy at a public URL.** Both stores require one even though this app collects nothing.
+- **Store screenshots**, taken on a device or simulator rather than a desktop browser.
 
 ## Licences and attribution
 
