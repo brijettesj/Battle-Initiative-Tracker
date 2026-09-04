@@ -148,8 +148,20 @@ npm run build
 npx http-server www -p 8080
 ```
 
-**On an Android device**, once [Android Studio](https://developer.android.com/studio) and a JDK are
-installed:
+**On an Android device.** Android Studio bundles Java 25, but Gradle 8.14 and Android Gradle Plugin
+8.13 cannot run on it — the build fails with `Unsupported class file major version 69`. Build on Java
+21 instead. Put one in `tools/jdk-21` (Temurin works; `tools/` is gitignored) and point the build at it:
+
+```sh
+export JAVA_HOME="$PWD/tools/jdk-21"   # cmd: set JAVA_HOME=%CD%	oolsjdk-21
+npm run apk                           # debug APK, sideloadable
+npm run apk:release                   # release bundle for the Play Console
+```
+
+The debug APK lands in `android/app/build/outputs/apk/debug/`. For Android Studio, set File ▸ Settings
+▸ Build, Execution, Deployment ▸ Build Tools ▸ Gradle ▸ Gradle JDK to a 21; Studio can download one.
+
+To open the project in the IDE:
 
 ```sh
 npm run open:android          # rebuilds www/ and opens the project

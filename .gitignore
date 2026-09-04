@@ -35,3 +35,6 @@ www/
 *.mobileprovision
 key.properties
 local.properties
+
+# Local toolchain, downloaded not authored (Temurin JDK 21)
+tools/
