@@ -545,6 +545,11 @@ unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+
   }
   .tie-say{font-size:calc(13px * var(--fs));color:var(--muted);line-height:1.7}
 
+  /* ---------- add sheet and its button ----------
+     Both are phone-only; the desktop panel stays where it is. */
+  .fab{display:none}
+  .sheet-x{display:none}
+
   /* ---------- add to home screen ----------
      A single pill, low enough to clear the turn controls, that slides up once
      the splash is out of the way and stays gone once dismissed. */
@@ -672,15 +677,30 @@ unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+
     header .tagline{font-size:calc(11px * var(--fs));letter-spacing:.16em;margin-top:6px}
     .appbar{margin-bottom:12px;gap:7px}
 
-    /* The turn banner shrinks: the round counter and the two turn buttons
-       share the top line, and the current turn drops underneath them. */
-    .banner{gap:10px;padding:11px 13px;margin-bottom:14px}
-    .round{padding:6px 11px}
-    .banner-nav{order:2;flex:1;justify-content:flex-end;gap:8px}
-    .banner-nav .btn-sm,.banner-nav .btn-blood{padding:8px 12px;font-size:calc(12.5px * var(--fs))}
-    .turn-block{order:3;flex:0 0 100%;min-width:0}
-    #turn-name{font-size:calc(21px * var(--fs))}
-    #turn-meta{margin-top:4px}
+    /* One line: round, whose turn it is, and the two turn buttons. The
+       "Current turn" label goes, since the bar says nothing else. */
+    .banner{gap:9px;padding:8px 10px;margin-bottom:12px;flex-wrap:nowrap;align-items:center}
+    .round{
+      order:1;flex:0 0 auto;padding:5px 9px;
+      font-size:calc(10px * var(--fs));letter-spacing:.1em;
+    }
+    .round b{font-size:calc(13px * var(--fs))}
+    .turn-block{order:2;flex:1 1 auto;min-width:0}
+    .turn-block small{display:none}
+    #turn-name{
+      display:block;font-size:calc(16px * var(--fs));line-height:1.2;
+      white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+    }
+    #turn-meta{
+      font-size:calc(11px * var(--fs));line-height:1.35;margin-top:1px;
+      white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+    }
+    .banner-nav{order:3;flex:0 0 auto;gap:6px;flex-wrap:nowrap}
+    .banner-nav .btn-sm,.banner-nav .btn-blood{
+      padding:8px 10px;font-size:calc(12px * var(--fs));white-space:nowrap;
+    }
+    #btn-prev .lbl{display:none}
+    .btn-hist{padding:6px 10px}
 
     /* The initiative order becomes a vertical list. A horizontal strip of
        120px cards is unusable on a phone: two fit on screen at a time. */
@@ -718,13 +738,16 @@ unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+
       box-shadow:0 0 0 1px var(--ember), 0 0 22px rgba(var(--blood-rgb),.4)}
     .card.active::before{display:none}
     .card.active .portrait{box-shadow:0 0 0 2px rgba(var(--blood-rgb),.5), inset 0 0 0 1px #000}
-    /* the hold has landed and the card is now yours to move */
-    .card.held{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
 
-    /* Three rows, as sketched. */
+    /* Three rows, as sketched. The ID selectors that set desktop widths
+       outrank a plain .addrow input rule, which is why the name box kept its
+       180px and ran under the dice button — these have to outrank them back. */
     .addrow{gap:10px}
     .addrow .field{flex:1 1 0;min-width:0}
     .addrow input,.addrow select{width:100%;min-width:0}
+    .addrow #f-name,.addrow #f-init,.addrow #f-mod,
+    .addrow #f-ac,.addrow #f-hp,.addrow #f-qty{width:100%;min-width:0}
+    .f-nm{flex:1 1 auto;min-width:0}
     .f-icon,.f-roll,.f-add{flex:0 0 auto}
     .f-add .lbl{display:none}
     .f-add .btn-blood{padding:10px 15px;font-size:calc(17px * var(--fs));line-height:1}
@@ -733,6 +756,53 @@ unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+
     .toolbar{gap:8px}
     .toolbar .btn-sm{flex:1 1 auto}
     .toolbar .spacer{display:none}
+
+    /* The add panel becomes a sheet over the fight, opened by the button
+       floating in the corner. */
+    .fab{
+      display:flex;align-items:center;justify-content:center;
+      position:fixed;z-index:180;
+      right:16px;bottom:calc(18px + env(safe-area-inset-bottom));
+      width:calc(56px * var(--fs));height:calc(56px * var(--fs));
+      padding:0;border-radius:var(--r-pill);
+      font-size:calc(30px * var(--fs));line-height:1;font-weight:400;
+      background:linear-gradient(180deg,var(--blood-lit),var(--blood));
+      color:var(--bone);border:1px solid var(--edge);
+      box-shadow:0 10px 28px rgba(0,0,0,.6), 0 0 26px rgba(var(--blood-rgb),.45);
+    }
+    body.add-open .fab{display:none}
+    /* keep the install offer clear of the floating button */
+    #install{bottom:calc(92px + env(safe-area-inset-bottom))}
+
+    #add-panel{
+      position:fixed;inset:0;z-index:220;
+      display:none;align-items:flex-end;justify-content:center;
+      padding:0;margin:0;border:0;border-radius:0;
+      background:rgba(5,5,5,.82);box-shadow:none;
+    }
+    body.add-open{overflow:hidden}
+    body.add-open #add-panel{display:flex}
+    #add-panel .panel-in{
+      position:relative;width:100%;max-height:88vh;overflow-y:auto;
+      background:linear-gradient(180deg,var(--panel),#171817);
+      border-top:2px solid var(--blood);
+      border-radius:var(--r-lg) var(--r-lg) 0 0;
+      padding:18px 16px calc(22px + env(safe-area-inset-bottom));
+      box-shadow:0 -20px 60px rgba(0,0,0,.8);
+    }
+    .sheet-x{
+      display:flex;align-items:center;justify-content:center;
+      position:absolute;top:12px;right:12px;
+      width:calc(32px * var(--fs));height:calc(32px * var(--fs));
+      padding:0;border-radius:var(--r-pill);
+      background:var(--panel2);border:1px solid var(--line-lit);
+      color:var(--muted);font-size:calc(13px * var(--fs));line-height:1;
+    }
+    #add-panel h2{padding-right:calc(40px * var(--fs))}
+
+    /* The portrait is the grip. It is the only part of a row that refuses
+       the browser's pan gesture, so the page still scrolls everywhere else. */
+    .port-wrap{touch-action:none}
   }
 </style>
 </head>
@@ -813,7 +883,7 @@ unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+
       <div id="turn-meta"></div>
     </div>
     <div class="banner-nav">
-      <button id="btn-prev" class="btn-sm">← Previous</button>
+      <button id="btn-prev" class="btn-sm" aria-label="Previous turn">←<span class="lbl"> Previous</span></button>
       <button id="btn-next" class="btn-blood">Next Turn →</button>
     </div>
   </div>
@@ -822,7 +892,9 @@ unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+
     <div class="track" id="track"></div>
   </div>
 
-  <div class="panel">
+  <div class="panel" id="add-panel">
+    <div class="panel-in">
+    <button type="button" id="add-close" class="sheet-x" aria-label="Close">✕</button>
     <h2>Add to the battle</h2>
     <div class="row addrow">
       <div class="field f-icon">
@@ -912,10 +984,13 @@ unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+
       <b>Icons</b> — in Settings, <i>This device</i> uses whatever emoji your device draws.
       <i>Universal</i> downloads one shared set so the tracker looks the same on the laptop and the iPad;
       it needs the internet the first time you switch, then works offline.<br>
+      <b>Reorder</b> — on a phone the portrait is the grip: drag it up or down to move that character
+      in the order. Swiping anywhere else on the row scrolls the page.<br>
       <b>Turns</b> — <kbd>Space</kbd> or <kbd>→</kbd> advances, <kbd>←</kbd> goes back. Everything saves
       automatically, so you can close the tab and pick the fight back up.
     </p>
-  </div>
+    </div><!-- /.panel-in -->
+  </div><!-- /#add-panel -->
   </div><!-- /.main-col -->
 
   <aside class="log-shell">
@@ -1053,6 +1128,9 @@ unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+
     </div>
   </div>
 </div>
+
+<!-- Phone-only shortcut into the add sheet. Hidden while the sheet is open. -->
+<button type="button" id="fab-add" class="fab" title="Add to the battle" aria-label="Add to the battle">+</button>
 
 <!-- Offer to install. Hidden until a browser says it can, or until we can at
      least explain how; never shown once the app is already running standalone. -->
@@ -1350,7 +1428,11 @@ unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+
 
     els.roundNum.textContent = state.round;
     const a = list.find(c => c.id === state.activeId);
-    els.btnNext.textContent = state.round === 0 ? "Start Battle →" : "Next Turn →";
+    // the phone banner is one line, so the label loses its second word there
+    const tight = window.matchMedia && window.matchMedia("(max-width:640px)").matches;
+    els.btnNext.textContent = state.round === 0
+      ? (tight ? "Start →" : "Start Battle →")
+      : (tight ? "Next →" : "Next Turn →");
     els.turnName.textContent = a ? a.name : (state.round === 0 && list.length ? "Not started" : "—");
     els.turnName.style.color = a ? sideColor(a.type) : "var(--muted)";
     els.turnMeta.innerHTML = a ? metaLine(a) : "";
@@ -1607,15 +1689,14 @@ unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+
 
     const m = trackMetrics();
     const touch = e.pointerType !== "mouse";
+    // A finger may only reorder from the portrait, which is the one part of a
+    // row that refuses the browser's pan gesture. A mouse can drag anywhere.
+    const canDrag = !(m.vert && touch) || !!e.target.closest(".port-wrap");
 
     drag = {
       card, cards, idx, newIdx: idx, moved: false, far: 0,
-      vert: m.vert, gap: m.gap,
-      // In a column the card fills the width, so a finger has to be able to
-      // scroll the page through it. Touch therefore only takes the gesture
-      // over after a short hold; a mouse never has to wait.
-      armed: !(m.vert && touch),
-      hold: 0, pointerId: e.pointerId,
+      vert: m.vert, gap: m.gap, canDrag,
+      pointerId: e.pointerId,
       startX: e.clientX, startY: e.clientY,
       lastX: e.clientX, lastY: e.clientY,
       startScroll: m.vert ? els.track.scrollTop : els.track.scrollLeft,
@@ -1625,16 +1706,8 @@ unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+
       raf: 0
     };
 
-    if(drag.armed){
-      card.setPointerCapture(e.pointerId);
-    }else{
-      drag.hold = setTimeout(() => {
-        if(!drag || drag.card !== card) return;
-        drag.armed = true;
-        try{ card.setPointerCapture(drag.pointerId); }catch(err){}
-        card.classList.add("held");
-        if(navigator.vibrate) navigator.vibrate(12);
-      }, 260);
+    if(canDrag){
+      try{ card.setPointerCapture(e.pointerId); }catch(err){}
     }
 
     card.addEventListener("pointermove", onPointerMove);
@@ -1648,8 +1721,8 @@ unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+
     drag.lastY = e.clientY;
     drag.far = Math.max(drag.far, Math.hypot(e.clientX - drag.startX, e.clientY - drag.startY));
 
-    if(!drag.armed){
-      // moved before the hold landed, so this is a page scroll, not a reorder
+    if(!drag.canDrag){
+      // started somewhere that pans, so this is a page scroll, not a reorder
       if(drag.far > 8) releaseDrag();
       return;
     }
@@ -1714,12 +1787,10 @@ unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+
     const d = drag;
     drag = null;
     if(!d) return null;
-    clearTimeout(d.hold);
     cancelAnimationFrame(d.raf);
     d.card.removeEventListener("pointermove", onPointerMove);
     d.card.removeEventListener("pointerup", onPointerUp);
     d.card.removeEventListener("pointercancel", onPointerUp);
-    d.card.classList.remove("held");
     document.body.classList.remove("is-dragging");
     return d;
   }
@@ -2431,6 +2502,25 @@ unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+
     });
   }
 
+  /* ---------------- add sheet ----------------
+     On a phone the add panel is a sheet over the fight, reached by the
+     floating button. On anything wider it is just a panel in the page and
+     none of this does anything. */
+  const addOpen = () => document.body.classList.contains("add-open");
+  function openAdd(){
+    document.body.classList.add("add-open");
+    const el = $("#add-panel .panel-in");
+    if(el) el.scrollTop = 0;
+    setTimeout(() => { try{ els.name.focus(); }catch(e){} }, 60);
+  }
+  function closeAdd(){ document.body.classList.remove("add-open"); }
+
+  $("#fab-add").addEventListener("click", e => { e.currentTarget.blur(); openAdd(); });
+  $("#add-close").addEventListener("click", e => { e.currentTarget.blur(); closeAdd(); });
+  $("#add-panel").addEventListener("mousedown", e => {
+    if(e.target.id === "add-panel") closeAdd();     // a tap on the dimmed area
+  });
+
   const settingsOpen = () => !$("#settings").classList.contains("hidden");
   function openSettings(){
     syncSettings();
@@ -2469,7 +2559,7 @@ unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+
   const modalOpen = () => !els.dlg.classList.contains("hidden") ||
                           !els.tie.classList.contains("hidden") ||
                           !$("#ask").classList.contains("hidden") ||
-                          settingsOpen();
+                          settingsOpen() || addOpen();
 
   document.addEventListener("keydown", e => {
     if(document.body.classList.contains("splash-up")) return;  // that key skipped the splash
@@ -2485,6 +2575,7 @@ unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+
       }
       if(!$("#ask").classList.contains("hidden")) return closeAsk();
       if(settingsOpen()) return closeSettings();
+      if(addOpen()) return closeAdd();
       if(!els.dlg.classList.contains("hidden")) return closeDialog();
       if(!els.tie.classList.contains("hidden")){ tieQueue = []; els.tie.classList.add("hidden"); }
       return;
