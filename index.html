@@ -463,7 +463,13 @@ unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+
   #f-init{width:88px}
   #f-mod,#f-ac{width:72px}
   #f-qty{width:66px}
-  .addrow + .addrow{margin-top:14px}
+  /* The markup splits the add form into three .addrow groups because that is
+     the phone arrangement. Structure is not responsive, so on desktop the
+     wrappers are collapsed with display:contents and all ten fields lay out as
+     a single flex row again, as they did before the phone rework. The phone
+     block puts the three rows back. Change this pair together with that one. */
+  .addrows{display:flex;gap:14px;flex-wrap:wrap;align-items:flex-end}
+  .addrows .addrow{display:contents}
   .f-add label{visibility:hidden}
   .toolbar{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px;align-items:center}
   .spacer{flex:1}
@@ -738,6 +744,11 @@ unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+
     /* Three rows, as sketched. The ID selectors that set desktop widths
        outrank a plain .addrow input rule, which is why the name box kept its
        180px and ran under the dice button — these have to outrank them back. */
+    /* Put the three rows back: .addrows stops being the flex row, and each
+       .addrow becomes one again. Pairs with the desktop rules in the base CSS. */
+    .addrows{display:block}
+    .addrows .addrow{display:flex}
+    .addrow + .addrow{margin-top:14px}
     .addrow{gap:10px}
     .addrow .field{flex:1 1 0;min-width:0}
     .addrow input,.addrow select{width:100%;min-width:0}
@@ -892,6 +903,11 @@ unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+
     <div class="panel-in">
     <button type="button" id="add-close" class="sheet-x" aria-label="Close">✕</button>
     <h2>Add to the battle</h2>
+
+    <!-- The three .addrow groups below are the phone layout. On desktop the
+         .addrows wrapper collapses them back into a single flex row (see the
+         CSS). Their inner indentation is left as-is so this diff stays small. -->
+    <div class="addrows">
     <div class="row addrow">
       <div class="field f-icon">
         <label>Icon</label>
@@ -946,6 +962,7 @@ unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+
         <button type="button" id="btn-add" class="btn-blood"><span class="plus">+</span><span class="lbl"> Add</span></button>
       </div>
     </div>
+    </div><!-- /.addrows -->
 
     <div class="toolbar">
       <button id="btn-sort" class="btn-sm">↓ Sort by initiative</button>
