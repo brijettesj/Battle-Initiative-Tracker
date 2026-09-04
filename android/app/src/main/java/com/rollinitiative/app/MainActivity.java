@@ -1,4 +1,4 @@
-package com.tabletopbattletracker.app;
+package com.rollinitiative.app;
 
 import com.getcapacitor.BridgeActivity;
 
