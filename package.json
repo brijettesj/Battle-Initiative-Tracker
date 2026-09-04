@@ -10,8 +10,8 @@
     "add:ios": "npm run build && cap add ios",
     "open:android": "npm run sync && cap open android",
     "open:ios": "npm run sync && cap open ios",
-    "apk": "npm run build && cap sync android && cd android && gradlew.bat assembleDebug",
-    "apk:release": "npm run build && cap sync android && cd android && gradlew.bat bundleRelease"
+    "apk": "npm run build && cap sync android && node gradle.js assembleDebug",
+    "apk:release": "npm run build && cap sync android && node gradle.js bundleRelease"
   },
   "dependencies": {
     "@capacitor/android": "^8.5.1",

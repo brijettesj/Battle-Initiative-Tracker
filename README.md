@@ -69,7 +69,8 @@ Note that each device keeps its own battle — a fight set up on a laptop won't 
 | File | What it is |
 | --- | --- |
 | `index.html` | The entire application — markup, styles, embedded font and script in one file. |
-| `build.js` | Copies `index.html` into `www/`, the folder Capacitor packages. |
+| `build.js` | Copies `index.html` and `web/` into `www/`, the folder Capacitor packages. |
+| `gradle.js` | Runs Gradle with the pinned JDK, on any platform or shell. |
 | `capacitor.config.json` | App id, display name and native shell settings. |
 | `package.json` | Capacitor dependencies and the build scripts below. |
 | `logos/` | Source artwork. `ICON ONLY` is the splash mark, `ICON - TWO LINER` the full logo. |
@@ -153,10 +154,11 @@ npx http-server www -p 8080
 21 instead. Put one in `tools/jdk-21` (Temurin works; `tools/` is gitignored) and point the build at it:
 
 ```sh
-export JAVA_HOME="$PWD/tools/jdk-21"   # cmd: set JAVA_HOME=%CD%	oolsjdk-21
-npm run apk                           # debug APK, sideloadable
-npm run apk:release                   # release bundle for the Play Console
+npm run apk           # debug APK, sideloadable
+npm run apk:release   # release bundle for the Play Console
 ```
+
+`gradle.js` finds `tools/jdk-21` on its own, so nothing needs setting first.
 
 The debug APK lands in `android/app/build/outputs/apk/debug/`. For Android Studio, set File ▸ Settings
 ▸ Build, Execution, Deployment ▸ Build Tools ▸ Gradle ▸ Gradle JDK to a 21; Studio can download one.
