@@ -2400,9 +2400,11 @@ unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+
      Safari never has, so iOS gets the two-step explanation instead. Either
      way nothing appears once the app is already running standalone. */
   const INSTALL_OFF = "battle-tracker-install-dismissed";
+  // Turned off for now: flip to true to offer the install pill again.
+  const INSTALL_PILL = false;
   (function installPill(){
     const pill = $("#install");
-    if(!pill) return;
+    if(!pill || !INSTALL_PILL) return;
 
     const standalone = (window.matchMedia &&
                         window.matchMedia("(display-mode: standalone)").matches) ||
