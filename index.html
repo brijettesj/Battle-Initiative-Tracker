@@ -410,7 +410,8 @@ unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+
   .log-caret{font-size:calc(9px * var(--fs));transition:transform .15s;display:inline-block}
   body.log-closed .log-caret{transform:rotate(-90deg)}
   body.log-closed .log-body{display:none}
-  .log-count{
+  /* .count-pill is the same badge used on the campaign and roster headings. */
+  .log-count,.count-pill{
     font-size:calc(10px * var(--fs));background:var(--blood-deep);border:1px solid var(--blood);
     color:var(--bone);border-radius:var(--r-pill);padding:2px 8px;font-variant-numeric:tabular-nums;
   }
@@ -463,6 +464,13 @@ unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+
   #f-init{width:88px}
   #f-mod,#f-ac{width:72px}
   #f-qty{width:66px}
+  /* The character form reuses .addrows/.addrow, so it needs the same kind of
+     desktop widths. Its ids are distinct, so the phone block's .addrow #f-*
+     overrides cannot reach them. */
+  #cc-name{width:180px}
+  #cc-player{width:130px}
+  #cc-class{width:120px}
+  #cc-level,#cc-mod,#cc-ac,#cc-hp{width:72px}
   /* The markup splits the add form into three .addrow groups because that is
      the phone arrangement. Structure is not responsive, so on desktop the
      wrappers are collapsed with display:contents and all ten fields lay out as
@@ -533,7 +541,7 @@ unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+
   }
   .modal h2{margin:0 0 18px;font-size:calc(16px * var(--fs));color:var(--accent);letter-spacing:.16em;text-transform:uppercase}
   .modal .row{margin-bottom:16px}
-  .modal-foot{display:flex;gap:10px;margin-top:22px;padding-top:18px;border-top:1px solid var(--line)}
+  .modal-foot{display:flex;gap:10px;margin-top:22px;padding-top:18px;border-top:1px solid var(--line);flex-wrap:wrap}
   .tie-list{display:flex;flex-wrap:wrap;gap:10px;margin:16px 0}
   .tie-chip{
     display:flex;align-items:center;gap:8px;padding:9px 14px;
@@ -595,6 +603,96 @@ unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+
     #install{left:14px;right:14px;transform:translateY(180%);max-width:none}
     #install.up{transform:translateY(0)}
   }
+
+  /* ---------- screens ----------
+     The app has four routes in front of the tracker: the main menu, character
+     creation, the campaign list and the encounter roster. They are ordinary
+     in-flow blocks, not fixed overlays, so they need no z-index and cannot
+     collide with the dialogs (200), the phone add sheet (220), the popups (300)
+     or the splash (900). Which one shows is driven by body[data-screen], the
+     same idiom as body[data-accent].
+
+     The .wrap hide list is written out rather than as :not([data-screen=track]).
+     If the attribute is ever missing — this markup is sometimes hosted inside a
+     <body> we did not write — :not() would hide the tracker AND match no screen,
+     leaving a blank page. Spelled out, a missing attribute falls back to the
+     tracker, which is what the app did before screens existed. */
+  .screen{display:none}
+  body[data-screen="menu"]  #scr-menu,
+  body[data-screen="chars"] #scr-chars,
+  body[data-screen="load"]  #scr-load,
+  body[data-screen="enc"]   #scr-enc{display:block}
+  body[data-screen="menu"]  .wrap,
+  body[data-screen="chars"] .wrap,
+  body[data-screen="load"]  .wrap,
+  body[data-screen="enc"]   .wrap{display:none}
+
+  .screen{
+    max-width:1460px;margin:0 auto;
+    padding:calc(20px + env(safe-area-inset-top)) calc(20px + env(safe-area-inset-right))
+            calc(64px + env(safe-area-inset-bottom)) calc(20px + env(safe-area-inset-left));
+  }
+  .screen-in{max-width:calc(660px * var(--fs));margin:0 auto;display:flex;flex-direction:column;gap:16px}
+  .screen-head{text-align:center;margin-bottom:4px}
+  /* header h1 and header .tagline are scoped to the <header> inside .wrap, so
+     the look is restated here rather than reached for. */
+  .screen-head h1{
+    font-family:var(--display-name);
+    font-size:calc(44px * var(--fs));line-height:1.04;margin:0;color:var(--accent);
+    letter-spacing:.005em;
+    text-shadow:0 0 24px rgba(var(--blood-rgb),.85);
+  }
+  .screen-head .tagline{
+    display:block;color:var(--muted);font-family:var(--display);font-weight:600;
+    font-size:calc(12px * var(--fs));letter-spacing:.2em;text-transform:uppercase;margin-top:10px;
+  }
+
+  .menu-list{display:flex;flex-direction:column;gap:10px}
+  .menu-btn{
+    display:block;width:100%;text-align:left;
+    padding:calc(14px * var(--fs)) 16px;
+    background:var(--panel2);border:1px solid var(--line);border-radius:var(--r-btn);
+  }
+  .menu-btn b{
+    display:block;font-family:var(--display);font-weight:700;
+    font-size:calc(15px * var(--fs));letter-spacing:.12em;text-transform:uppercase;color:var(--bone);
+  }
+  .menu-btn small{
+    display:block;color:var(--muted);font-size:calc(11.5px * var(--fs));
+    margin-top:5px;line-height:1.6;
+  }
+  .menu-btn:hover{border-color:var(--blood-lit);background:var(--hover-bg)}
+  .menu-btn.hot{background:linear-gradient(180deg,var(--blood-lit),var(--blood));border-color:var(--edge)}
+  .menu-btn.hot small{color:var(--bone);opacity:.85}
+  /* The UA's [hidden] rule loses to the author display above, so Resume would
+     never hide without this. */
+  .menu-btn[hidden]{display:none}
+
+  /* Rows on the party, campaign and roster lists all borrow .set-row's frame. */
+  .party-list{display:flex;flex-direction:column}
+  .party-row{align-items:center;cursor:default}
+  .party-row .emo{font-size:calc(22px * var(--fs));flex:0 0 auto;line-height:1}
+  .party-row img{
+    width:calc(28px * var(--fs));height:calc(28px * var(--fs));
+    border-radius:var(--r-xs);object-fit:cover;flex:0 0 auto;display:block;
+  }
+  .party-row .who{flex:1;min-width:0}
+  .party-row .who b{display:block;font-weight:600;font-size:calc(13px * var(--fs))}
+
+  /* The checkbox and the name are inside a <label>; the initiative box must not
+     be, or clicking into it would toggle the tick. */
+  .enc-row{align-items:center;cursor:default}
+  .enc-who{display:flex;gap:12px;align-items:center;flex:1;min-width:0;cursor:pointer;margin:0}
+  .enc-who .who{flex:1;min-width:0}
+  /* .set-row input (a class plus a type) also matches this box and would size it
+     to a 16px checkbox, so the selector here has to outrank it — .enc-init alone
+     loses on specificity even though it is declared later. */
+  .enc-row .enc-init{
+    width:calc(78px * var(--fs));flex:0 0 auto;margin:0;
+    padding:8px 10px;text-align:center;font-variant-numeric:tabular-nums;
+  }
+  .enc-row.off{opacity:.5}
+  .screen .empty{padding:26px 10px}
 
   /* ---------- launch splash ----------
      Covers the app for three seconds, then fades. A tap, click or key skips it.
@@ -778,6 +876,12 @@ unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+
       box-shadow:0 10px 28px rgba(0,0,0,.6), 0 0 26px rgba(var(--blood-rgb),.45);
     }
     body.add-open .fab{display:none}
+    /* The button is a sibling of .wrap, not a child, so hiding the tracker does
+       not hide it. Spelled out for the same fail-safe reason as the .wrap list. */
+    body[data-screen="menu"]  .fab,
+    body[data-screen="chars"] .fab,
+    body[data-screen="load"]  .fab,
+    body[data-screen="enc"]   .fab{display:none}
     /* keep the install offer clear of the floating button */
     #install{bottom:calc(92px + env(safe-area-inset-bottom))}
 
@@ -810,10 +914,22 @@ unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+
     /* The portrait is the grip. It is the only part of a row that refuses
        the browser's pan gesture, so the page still scrolls everywhere else. */
     .port-wrap{touch-action:none}
+
+    /* Screens: type and padding only. Every screen is a single column at all
+       widths, so nothing here re-groups markup — the one multi-field form
+       reuses .addrows/.addrow and is handled by the rules above. */
+    .screen{padding-left:14px;padding-right:14px}
+    .screen-in{gap:12px}
+    .screen-head h1{font-size:calc(30px * var(--fs))}
+    .menu-btn{padding:12px 13px}
+    .enc-row .enc-init{width:calc(62px * var(--fs))}
+    #btn-menu .lbl{display:none}
   }
 </style>
 </head>
-<body class="splash-up">
+<!-- data-screen is set here, not from script, so the tracker never flashes
+     behind the splash before the app runs. -->
+<body class="splash-up" data-screen="menu">
 
 <!-- Launch splash. Sits first so it paints before anything else. -->
 <div id="splash">
@@ -878,6 +994,7 @@ unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+
     <button type="button" id="btn-undo" class="btn-hist" title="Nothing to undo">↶</button>
     <button type="button" id="btn-redo" class="btn-hist" title="Nothing to redo">↷</button>
     <div class="spacer"></div>
+    <button type="button" id="btn-menu" class="btn-sm btn-ghost" title="Back to the main menu">☰<span class="lbl"> Menu</span></button>
     <button type="button" id="btn-help" class="btn-sm btn-ghost">✕ Hide help</button>
     <button type="button" id="btn-settings" class="btn-sm" title="Settings">⚙ Settings</button>
   </div>
@@ -1019,6 +1136,204 @@ unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+
   </aside>
 </div>
 
+<!-- ============ screens in front of the tracker ============
+     Siblings of .wrap, shown one at a time by body[data-screen]. They are
+     ordinary in-flow blocks, so the dialogs and popups below still layer over
+     them without any z-index of their own. All of this markup is static because
+     the script caches nodes with $() at parse time. -->
+
+<!-- ---------- main menu ---------- -->
+<div class="screen" id="scr-menu">
+  <div class="screen-in">
+    <div class="screen-head">
+      <h1>Roll Initiative</h1>
+      <span class="tagline">A Dungeon Battle Tracker</span>
+    </div>
+
+    <div class="panel">
+      <h2>Begin</h2>
+      <div class="menu-list">
+        <button type="button" id="m-resume" class="menu-btn hot" hidden>
+          <b>Resume Battle</b><small id="m-resume-say"></small>
+        </button>
+        <button type="button" id="m-new" class="menu-btn">
+          <b>New Campaign</b><small>Enter your players once, then bring them to every encounter.</small>
+        </button>
+        <button type="button" id="m-load" class="menu-btn">
+          <b>Load Campaign</b><small id="m-load-say">No campaigns saved yet.</small>
+        </button>
+        <button type="button" id="m-quick" class="menu-btn">
+          <b>Quick Play</b><small>Straight to the tracker. Nothing is kept in a campaign.</small>
+        </button>
+      </div>
+      <div class="modal-foot">
+        <div class="spacer"></div>
+        <button type="button" id="m-settings" class="btn-sm">⚙ Settings</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ---------- character creation ---------- -->
+<div class="screen" id="scr-chars">
+  <div class="screen-in">
+    <div class="screen-head">
+      <h1 id="cc-title">New Campaign</h1>
+      <span class="tagline">Your players, entered once</span>
+    </div>
+
+    <div class="panel">
+      <h2>Campaign</h2>
+      <div class="row">
+        <div class="field" style="flex:1;min-width:200px">
+          <label>Name</label>
+          <input type="text" id="cc-camp" placeholder="Curse of the Ember Vale" autocomplete="off">
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2 id="cc-formhead">Add a character</h2>
+      <!-- Reuses the add form's .addrows/.addrow/.field classes on purpose: the
+           desktop collapse (display:contents) and the phone restore both already
+           exist, so this form gets the same responsive behaviour for free. -->
+      <div class="addrows">
+      <div class="row addrow">
+        <div class="field f-icon">
+          <label>Icon</label>
+          <button type="button" id="cc-icon" class="icon-btn">🧝</button>
+        </div>
+        <div class="field f-nm">
+          <label>Name</label>
+          <input type="text" id="cc-name" placeholder="Ilyana Vex" autocomplete="off">
+        </div>
+        <div class="field">
+          <label>Player</label>
+          <input type="text" id="cc-player" placeholder="Sam" autocomplete="off">
+        </div>
+      </div>
+
+      <div class="row addrow">
+        <div class="field">
+          <label>Class</label>
+          <input type="text" id="cc-class" placeholder="Paladin" autocomplete="off">
+        </div>
+        <div class="field">
+          <label>Level</label>
+          <input type="number" id="cc-level" placeholder="—" min="0" max="20">
+        </div>
+        <div class="field">
+          <label>Side</label>
+          <select id="cc-type">
+            <option value="player" selected>Player</option>
+            <option value="ally">Ally / NPC</option>
+            <option value="enemy">Enemy</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="row addrow">
+        <div class="field">
+          <label title="Added to the die roll you type at the start of a fight">Init mod</label>
+          <input type="number" id="cc-mod" value="0">
+        </div>
+        <div class="field">
+          <label>AC</label>
+          <input type="number" id="cc-ac" placeholder="—" min="0">
+        </div>
+        <div class="field">
+          <label>Max HP</label>
+          <input type="number" id="cc-hp" placeholder="—" min="0">
+        </div>
+        <div class="field f-add">
+          <label aria-hidden="true">&nbsp;</label>
+          <button type="button" id="cc-add" class="btn-blood"><span class="plus">+</span><span class="lbl"> Add</span></button>
+        </div>
+      </div>
+      </div><!-- /.addrows -->
+
+      <div class="field" style="margin-top:14px">
+        <label>Notes</label>
+        <textarea id="cc-notes" placeholder="Resistant to fire · darkvision 60 ft. · carries the sunblade."></textarea>
+      </div>
+      <div class="toolbar">
+        <div class="spacer"></div>
+        <button type="button" id="cc-cancel" class="btn-sm btn-ghost" hidden>Cancel edit</button>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>The party <span class="count-pill" id="cc-count">0</span></h2>
+      <div class="party-list" id="cc-list"></div>
+      <p class="set-note" id="cc-msg"></p>
+    </div>
+
+    <div class="modal-foot">
+      <button type="button" id="cc-back" class="btn-ghost">← Menu</button>
+      <div class="spacer"></div>
+      <button type="button" id="cc-save" class="btn-blood">Save campaign →</button>
+    </div>
+  </div>
+</div>
+
+<!-- ---------- campaign list ---------- -->
+<div class="screen" id="scr-load">
+  <div class="screen-in">
+    <div class="screen-head">
+      <h1>Load Campaign</h1>
+      <span class="tagline">Choose a campaign</span>
+    </div>
+
+    <div class="panel">
+      <h2>Campaigns <span class="count-pill" id="ld-count">0</span></h2>
+      <div class="party-list" id="ld-list"></div>
+    </div>
+
+    <div class="modal-foot">
+      <button type="button" id="ld-back" class="btn-ghost">← Menu</button>
+      <div class="spacer"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ---------- encounter roster ---------- -->
+<div class="screen" id="scr-enc">
+  <div class="screen-in">
+    <div class="screen-head">
+      <h1 id="enc-title">Who is here</h1>
+      <span class="tagline" id="enc-sub">Tick who is at the table tonight</span>
+    </div>
+
+    <div class="panel">
+      <h2>The party <span class="count-pill" id="enc-count">0</span></h2>
+      <div class="party-list" id="enc-list"></div>
+      <div class="toolbar">
+        <button type="button" id="enc-all" class="btn-sm">Everyone</button>
+        <button type="button" id="enc-none" class="btn-sm btn-ghost">Nobody</button>
+        <div class="spacer"></div>
+        <button type="button" id="enc-edit" class="btn-sm btn-ghost">✎ Edit party</button>
+      </div>
+      <p class="hint">
+        <b>Initiative</b> — type what each player rolled. Every name you have ticked needs a
+        number before the encounter can start. Monsters are added on the tracker as usual.
+      </p>
+    </div>
+
+    <div class="panel" id="enc-crt-panel" hidden>
+      <h2>Creatures</h2>
+      <div class="party-list" id="enc-crt"></div>
+      <p class="set-note">Saved from earlier fights. They roll their own initiative when the encounter begins.</p>
+    </div>
+
+    <div class="modal-foot">
+      <button type="button" id="enc-back" class="btn-ghost">← Menu</button>
+      <div class="spacer"></div>
+      <button type="button" id="enc-resume" class="btn-sm" hidden>Resume this campaign's battle</button>
+      <button type="button" id="enc-go" class="btn-blood" disabled>Start encounter →</button>
+    </div>
+  </div>
+</div>
+
 <!-- emoji / image picker -->
 <div id="picker" class="pop hidden">
   <div class="pop-head">Choose an icon</div>
@@ -1037,7 +1352,9 @@ unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+
 
 <!-- edit combatant -->
 <div id="dlg" class="overlay hidden">
-  <div class="modal">
+  <!-- a little wider than the 520px default so the footer's four buttons sit on
+       one row once "Keep creature" joins them -->
+  <div class="modal" style="max-width:580px">
     <h2 id="dlg-title">Edit combatant</h2>
     <div class="row">
       <div class="field">
@@ -1075,6 +1392,9 @@ unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+
     </div>
     <div class="modal-foot">
       <button type="button" id="d-delete" class="btn-ghost">Remove from battle</button>
+      <!-- only meaningful while a campaign is loaded; shown by openDialog() -->
+      <button type="button" id="d-keep" class="btn-ghost" hidden title="Save this creature to the campaign so it can be dropped into a later encounter">✚ Keep creature</button>
+      <!-- the footer wraps rather than overflowing once the dialog is narrow -->
       <div class="spacer"></div>
       <button type="button" id="d-cancel">Cancel</button>
       <button type="button" id="d-save" class="btn-blood">Save</button>
@@ -1276,12 +1596,16 @@ unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+
     s.fontScale = SIZES.some(z => z.v === s.fontScale) ? s.fontScale : 1;
     s.accent = ACCENTS.some(a => a.k === s.accent) ? s.accent : "blood";
     s.reduceMotion = s.reduceMotion === true;
+    // which campaign this fight belongs to; null for a quick-play board
+    s.campaignId = typeof s.campaignId === "string" ? s.campaignId : null;
     s.log = Array.isArray(s.log) ? s.log.filter(e => e && typeof e.x === "string") : [];
     s.combatants.forEach(c => {
       c.ac      = c.ac      || 0;
       c.tempHp  = c.tempHp  || 0;
       c.notes   = c.notes   || "";
       c.mod     = c.mod     || 0;
+      // the campaign character this one was built from, if any
+      c.charId  = c.charId  || null;
       // conditions used to be bare keys; they now carry a rounds-remaining counter
       c.conds = Array.isArray(c.conds) ? c.conds.map(x => {
         if(typeof x === "string") return COND[x] ? {k:x, n:0} : null;
@@ -1300,9 +1624,25 @@ unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+
         }
       }catch(e){ /* corrupt or blocked storage — fall through */ }
     }
-    return { round:0, activeId:null, askTies:true, showHelp:true, emojiFont:"system",
-             showLog:true, fontScale:1, accent:"blood", reduceMotion:false,
-             log:[], combatants:[] };
+    return blankState();
+  }
+
+  /* An empty board. Preferences are carried over when there are any to carry —
+     clearing the fight must not also reset the text size or the accent. */
+  function blankState(prefs){
+    const p = prefs || {};
+    return {
+      round:0, activeId:null,
+      campaignId: p.campaignId !== undefined ? p.campaignId : null,
+      askTies:      p.askTies      !== undefined ? p.askTies      : true,
+      showHelp:     p.showHelp     !== undefined ? p.showHelp     : true,
+      emojiFont:    p.emojiFont    || "system",
+      showLog:      p.showLog      !== undefined ? p.showLog      : true,
+      fontScale:    p.fontScale    || 1,
+      accent:       p.accent       || "blood",
+      reduceMotion: p.reduceMotion === true,
+      log:[], combatants:[]
+    };
   }
   /* ---------------- undo / redo ----------------
      Snapshot-based: save() is the single choke point every mutation already goes through,
@@ -1348,6 +1688,8 @@ unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+
     if(!parsed) return false;
     // Preferences ride along in state so they persist, but they are not part of
     // the fight — an undo of a hit must not also shrink the text.
+    // campaignId is deliberately NOT here: which campaign a fight belongs to is
+    // battle data, so undoing a campaign load should restore the old one too.
     ["fontScale","accent","reduceMotion","emojiFont","askTies","showHelp","showLog"]
       .forEach(k => { parsed[k] = state[k]; });
     restoring = true;
@@ -1430,6 +1772,124 @@ unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+
   const d20 = () => 1 + Math.floor(Math.random()*20);
   const clamp = (v,lo,hi) => Math.max(lo, Math.min(hi, v));
   const sideColor = t => t === "enemy" ? "var(--enemy)" : t === "player" ? "var(--player)" : "var(--ally)";
+
+  /* ---------------- campaigns ----------------
+     A campaign is a saved party: characters the DM enters once and brings to
+     every encounter. Campaigns live in their OWN localStorage key, not in state.
+     That is deliberate — snapshot() is JSON.stringify(state) and runs on nearly
+     every save(), so putting a library of portraits in there would both make
+     undo rewind the party and re-serialise a few hundred KB of base64 on every
+     hit point. A corrupt battle also cannot take the party down with it.
+
+     This section must stay BELOW uid() above: it calls it at load time, and uid
+     is a const arrow, so it is not hoisted. */
+  const CAMP_STORE = "dnd-campaigns-v1";
+
+  function normChar(ch){
+    if(!ch || typeof ch.name !== "string" || !ch.name.trim()) return null;
+    const type = (ch.type === "ally" || ch.type === "enemy") ? ch.type : "player";
+    const img  = (typeof ch.img === "string" && ch.img.startsWith("data:")) ? ch.img : null;
+    return {
+      id:     (typeof ch.id === "string" && ch.id) ? ch.id : uid(),
+      name:   ch.name.trim().slice(0, 40),
+      player: typeof ch.player === "string" ? ch.player.trim().slice(0, 40) : "",
+      cls:    typeof ch.cls    === "string" ? ch.cls.trim().slice(0, 30)    : "",
+      level:  clamp(parseInt(ch.level, 10) || 0, 0, 20),
+      type,
+      icon:   (!img && typeof ch.icon === "string" && ch.icon) ? ch.icon : DEFAULT_ICON[type],
+      img,
+      mod:    parseInt(ch.mod, 10) || 0,
+      ac:     Math.max(0, parseInt(ch.ac, 10)    || 0),
+      maxHp:  Math.max(0, parseInt(ch.maxHp, 10) || 0),
+      notes:  typeof ch.notes === "string" ? ch.notes.slice(0, 400) : ""
+    };
+  }
+
+  /* Unlike normalize(), this rebuilds rather than mutating and never fails: a
+     half-readable library should yield the readable campaigns, not none. */
+  function normCamps(o){
+    const src = (o && Array.isArray(o.list)) ? o.list : (Array.isArray(o) ? o : []);
+    const out = {v:1, list:[]};
+    src.forEach(c => {
+      if(!c || typeof c.name !== "string") return;
+      out.list.push({
+        id:        (typeof c.id === "string" && c.id) ? c.id : uid(),
+        name:      c.name.trim().slice(0, 60) || "Untitled campaign",
+        made:      parseInt(c.made, 10) || Date.now(),
+        chars:     (Array.isArray(c.chars)     ? c.chars     : []).map(normChar).filter(Boolean),
+        creatures: (Array.isArray(c.creatures) ? c.creatures : []).map(normChar).filter(Boolean),
+        battle:    c.battle ? normalize(c.battle) : null
+      });
+    });
+    return out;
+  }
+
+  function loadCampaigns(){
+    try{
+      const raw = localStorage.getItem(CAMP_STORE);
+      if(raw) return normCamps(JSON.parse(raw));
+    }catch(e){ /* corrupt or blocked storage — start empty */ }
+    return {v:1, list:[]};
+  }
+
+  /* Returns false when the write failed. Every other setItem in this file
+     swallows the error, which is fine for one keystroke of a fight — it is not
+     fine for a party someone just spent an evening typing, so callers surface it. */
+  function saveCampaigns(){
+    try{ localStorage.setItem(CAMP_STORE, JSON.stringify(campaigns)); return true; }
+    catch(e){ return false; }
+  }
+
+  let campaigns = loadCampaigns();
+
+  const findCampaign = id => campaigns.list.find(c => c.id === id) || null;
+
+  /* A character is a template; a combatant is one instance of it in one fight.
+     Everything per-fight (a fresh id, current HP, temp HP, conditions) is made
+     here rather than stored. The icon/img pairing matches addCombatants(). */
+  function toCombatant(ch, init){
+    return {
+      id: uid(), charId: ch.id,
+      name: ch.name, type: ch.type,
+      icon: ch.img ? DEFAULT_ICON[ch.type] : (ch.icon || DEFAULT_ICON[ch.type]),
+      img:  ch.img || null,
+      init: parseInt(init, 10) || 0,
+      mod:  ch.mod || 0,
+      ac:   ch.ac  || 0,
+      hp:   ch.maxHp || 0, maxHp: ch.maxHp || 0, tempHp: 0,
+      notes: ch.notes || "", conds: []
+    };
+  }
+
+  /* A combatant on the board, saved back as a reusable creature. */
+  function toChar(c){
+    return normChar({
+      name:c.name, type:c.type, icon:c.icon, img:c.img,
+      mod:c.mod, ac:c.ac, maxHp:c.maxHp, notes:c.notes
+    });
+  }
+
+  const plural = (n, word) => n + " " + word + (n === 1 ? "" : "s");
+
+  function charLine(ch){
+    const bits = [];
+    if(ch.player) bits.push(ch.player);
+    if(ch.cls)    bits.push(ch.cls + (ch.level ? " " + ch.level : ""));
+    else if(ch.level) bits.push("Level " + ch.level);
+    if(ch.ac)     bits.push("AC " + ch.ac);
+    if(ch.maxHp)  bits.push(ch.maxHp + " HP");
+    bits.push("init " + (ch.mod >= 0 ? "+" : "") + ch.mod);
+    return bits.join(" · ");
+  }
+
+  function campLine(c){
+    const bits = [plural(c.chars.length, "character")];
+    if(c.battle && c.battle.combatants.length){
+      bits.push(c.battle.round ? "battle in round " + c.battle.round : "battle set up");
+    }
+    bits.push(new Date(c.made).toLocaleDateString());
+    return bits.join(" · ");
+  }
 
   /* ---------------- rendering ---------------- */
   function render(){
@@ -1920,6 +2380,7 @@ unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+
     for(let i = 0; i < qty; i++){
       const c = {
         id: uid(),
+        charId: null,          // typed in by hand, not built from a campaign character
         name: qty > 1 ? base + " " + (i + 1) : base,
         type,
         icon: pendingIcon && !pendingIcon.startsWith("data:") ? pendingIcon : DEFAULT_ICON[type],
@@ -2148,10 +2609,30 @@ unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+
     dlgConds = c.conds.map(x => ({k:x.k, n:x.n}));
     renderCondList(D.conds, {conds:dlgConds});
     syncDlgIcon();
+    // saving a monster back to the party only means anything with one loaded
+    $("#d-keep").hidden = !state.campaignId;
     els.dlg.classList.remove("hidden");
     D.name.focus();
   }
   let dlgConds = [];
+
+  /* Keep this monster: copies the combatant onto the campaign as a template, so
+     a recurring villain can be dropped into a later encounter. */
+  $("#d-keep").addEventListener("click", () => {
+    const c = dlgTarget;
+    if(!c) return;
+    const camp = findCampaign(state.campaignId);
+    if(!camp) return;
+    const ch = toChar(c);
+    if(!ch) return;
+    const at = camp.creatures.findIndex(x => x.name === ch.name);
+    if(at >= 0) camp.creatures[at] = ch; else camp.creatures.push(ch);
+    if(saveCampaigns()){
+      logEvent("roster", c.name + " saved to " + camp.name);
+      save(); render();
+      closeDialog();
+    }
+  });
 
   function syncDlgIcon(){
     D.icon.innerHTML = "";
@@ -2288,7 +2769,436 @@ unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+
     e.target.value = "";
   });
 
+  /* ---------------- screens ----------------
+     Four routes sit in front of the tracker: the menu, character creation, the
+     campaign list and the encounter roster. showScreen() is the only thing that
+     writes body[data-screen]. This section sits after the icon picker because
+     character creation reuses openPicker(), and before modalOpen() below, which
+     asks onTrack() whether the keyboard should be stepping turns. */
+  const onTrack = () => document.body.dataset.screen === "track";
+
+  function showScreen(name){
+    // a focused control inside something about to be display:none strands focus
+    if(document.activeElement && document.activeElement.blur) document.activeElement.blur();
+    // the tracker's transient surfaces are siblings of .wrap, not children
+    closeAdd();
+    els.picker.classList.add("hidden");
+    els.condMenu.classList.add("hidden");
+
+    document.body.dataset.screen = name;
+    if(name === "menu")  paintMenu();
+    if(name === "chars") paintParty();
+    if(name === "load")  paintCamps();
+    if(name === "enc")   paintEnc();
+    if(name === "track") render();
+    window.scrollTo(0, 0);
+  }
+
+  /* Copies the live board into its campaign, so leaving the tracker to look at
+     another campaign does not lose the fight. */
+  function stashBattle(){
+    if(!state.campaignId) return;
+    const camp = findCampaign(state.campaignId);
+    if(!camp) return;
+    camp.battle = JSON.parse(JSON.stringify(state));
+    saveCampaigns();
+  }
+
+  function faceHtml(ch){
+    return ch.img ? '<img src="' + esc(ch.img) + '" alt="">'
+                  : '<span class="emo">' + esc(emo(ch.icon)) + '</span>';
+  }
+
+  /* ---- main menu ---- */
+  function paintMenu(){
+    const n = state.combatants.length;
+    const resume = $("#m-resume");
+    resume.hidden = !n;
+    if(n){
+      const camp = state.campaignId && findCampaign(state.campaignId);
+      const where = state.round ? "Round " + state.round : "Not started";
+      $("#m-resume-say").textContent =
+        where + " · " + plural(n, "combatant") + (camp ? " · " + camp.name : "");
+    }
+    const c = campaigns.list.length;
+    $("#m-load-say").textContent = c
+      ? plural(c, "campaign") + " saved."
+      : "No campaigns saved yet.";
+    $("#m-load").disabled = !c;
+  }
+
+  /* ---- character creation ---- */
+  let ccChars = [], ccCampId = null, ccEditId = null, ccIcon = null, ccDirty = false;
+
+  const ccF = {
+    camp:$("#cc-camp"), name:$("#cc-name"), player:$("#cc-player"), cls:$("#cc-class"),
+    level:$("#cc-level"), type:$("#cc-type"), mod:$("#cc-mod"), ac:$("#cc-ac"),
+    hp:$("#cc-hp"), notes:$("#cc-notes"), icon:$("#cc-icon")
+  };
+
+  function ccOpen(campId){
+    const camp = campId ? findCampaign(campId) : null;
+    ccCampId = camp ? camp.id : null;
+    ccChars  = camp ? JSON.parse(JSON.stringify(camp.chars)) : [];
+    ccDirty  = false;
+    ccF.camp.value = camp ? camp.name : "";
+    $("#cc-title").textContent = camp ? camp.name : "New Campaign";
+    ccReset();
+    showScreen("chars");
+    (camp ? ccF.name : ccF.camp).focus();
+  }
+
+  function ccSyncIcon(){
+    ccF.icon.innerHTML = "";
+    if(ccIcon && ccIcon.startsWith("data:")){
+      const im = document.createElement("img"); im.src = ccIcon; ccF.icon.appendChild(im);
+    } else ccF.icon.textContent = emo(ccIcon || DEFAULT_ICON[ccF.type.value]);
+  }
+
+  function ccReset(){
+    ccEditId = null; ccIcon = null;
+    ccF.name.value = ""; ccF.player.value = ""; ccF.cls.value = "";
+    ccF.level.value = ""; ccF.mod.value = 0; ccF.ac.value = "";
+    ccF.hp.value = ""; ccF.notes.value = "";
+    $("#cc-formhead").textContent = "Add a character";
+    $("#cc-add").querySelector(".lbl").textContent = " Add";
+    $("#cc-cancel").hidden = true;
+    ccSyncIcon();
+    paintParty();
+  }
+
+  function ccCommit(){
+    const ch = normChar({
+      id: ccEditId || undefined,
+      name: ccF.name.value, player: ccF.player.value, cls: ccF.cls.value,
+      level: ccF.level.value, type: ccF.type.value,
+      icon: ccIcon && !ccIcon.startsWith("data:") ? ccIcon : null,
+      img:  ccIcon &&  ccIcon.startsWith("data:") ? ccIcon : null,
+      mod: ccF.mod.value, ac: ccF.ac.value, maxHp: ccF.hp.value, notes: ccF.notes.value
+    });
+    if(!ch){ ccF.name.focus(); return; }
+    const at = ccEditId ? ccChars.findIndex(x => x.id === ccEditId) : -1;
+    if(at >= 0) ccChars[at] = ch; else ccChars.push(ch);
+    ccDirty = true;
+    ccReset();
+    ccF.name.focus();
+  }
+
+  function ccEdit(id){
+    const ch = ccChars.find(x => x.id === id);
+    if(!ch) return;
+    ccEditId = ch.id;
+    ccIcon = ch.img || ch.icon;
+    ccF.name.value = ch.name; ccF.player.value = ch.player; ccF.cls.value = ch.cls;
+    ccF.level.value = ch.level || ""; ccF.type.value = ch.type; ccF.mod.value = ch.mod;
+    ccF.ac.value = ch.ac || ""; ccF.hp.value = ch.maxHp || ""; ccF.notes.value = ch.notes;
+    $("#cc-formhead").textContent = "Edit " + ch.name;
+    $("#cc-add").querySelector(".lbl").textContent = " Save";
+    $("#cc-cancel").hidden = false;
+    ccSyncIcon();
+    paintParty();
+    ccF.name.focus();
+  }
+
+  function paintParty(){
+    const box = $("#cc-list");
+    $("#cc-count").textContent = ccChars.length;
+    box.innerHTML = "";
+    if(!ccChars.length){
+      box.innerHTML = '<div class="empty">No one yet. Fill the form above and press Add.</div>';
+      return;
+    }
+    ccChars.forEach(ch => {
+      const row = document.createElement("div");
+      row.className = "set-row party-row";
+      row.innerHTML =
+        faceHtml(ch) +
+        '<span class="who"><b>' + esc(ch.name) + '</b>' +
+        '<small>' + esc(charLine(ch)) + '</small></span>' +
+        '<div class="spacer"></div>' +
+        '<button type="button" class="btn-sm" data-act="edit" aria-label="Edit ' + esc(ch.name) + '">✎</button>' +
+        '<button type="button" class="btn-sm btn-ghost" data-act="del" aria-label="Remove ' + esc(ch.name) + '">✕</button>';
+      row.querySelector('[data-act=edit]').addEventListener("click", () => ccEdit(ch.id));
+      row.querySelector('[data-act=del]').addEventListener("click", () => {
+        askConfirm("Remove character", "Remove " + ch.name + " from this campaign?", "Remove", () => {
+          ccChars = ccChars.filter(x => x.id !== ch.id);
+          ccDirty = true;
+          if(ccEditId === ch.id) ccReset(); else paintParty();
+        });
+      });
+      box.appendChild(row);
+    });
+  }
+
+  function ccSave(){
+    const name = ccF.camp.value.trim();
+    if(!name){ ccF.camp.focus(); return; }
+    if(!ccChars.length){
+      $("#cc-msg").textContent = "Add at least one character before saving.";
+      return;
+    }
+    let camp = ccCampId ? findCampaign(ccCampId) : null;
+    if(!camp){
+      camp = {id:uid(), name, made:Date.now(), chars:[], creatures:[], battle:null};
+      campaigns.list.push(camp);
+    }
+    camp.name = name.slice(0, 60);
+    camp.chars = ccChars;
+    if(!saveCampaigns()){
+      $("#cc-msg").textContent =
+        "There was no room to save this campaign. Remove a portrait or an older campaign and try again.";
+      return;
+    }
+    $("#cc-msg").textContent = "";
+    ccCampId = camp.id;
+    ccDirty = false;
+    encOpen(camp.id);
+  }
+
+  function ccLeave(){
+    const go = () => { ccDirty = false; showScreen("menu"); };
+    if(ccDirty) askConfirm("Leave without saving",
+      "This campaign has changes that have not been saved yet.", "Discard changes", go);
+    else go();
+  }
+
+  /* ---- campaign list ---- */
+  function paintCamps(){
+    const box = $("#ld-list");
+    $("#ld-count").textContent = campaigns.list.length;
+    box.innerHTML = "";
+    if(!campaigns.list.length){
+      box.innerHTML = '<div class="empty">No campaigns yet. Start one from the menu.</div>';
+      return;
+    }
+    campaigns.list.forEach(c => {
+      const row = document.createElement("div");
+      row.className = "set-row party-row";
+      row.innerHTML =
+        '<span class="who"><b>' + esc(c.name) + '</b>' +
+        '<small>' + esc(campLine(c)) + '</small></span>' +
+        '<div class="spacer"></div>' +
+        '<button type="button" class="btn-sm" data-act="open">Open</button>' +
+        '<button type="button" class="btn-sm btn-ghost" data-act="del" aria-label="Delete ' + esc(c.name) + '">✕</button>';
+      row.querySelector('[data-act=open]').addEventListener("click", () => encOpen(c.id));
+      row.querySelector('[data-act=del]').addEventListener("click", () => {
+        askConfirm("Delete campaign",
+          "This permanently deletes " + c.name + " and its characters.", "Delete", () => {
+            campaigns.list = campaigns.list.filter(x => x.id !== c.id);
+            if(state.campaignId === c.id) state.campaignId = null;
+            saveCampaigns();
+            paintCamps();
+          });
+      });
+      box.appendChild(row);
+    });
+  }
+
+  /* ---- encounter roster ---- */
+  let encCampId = null;
+
+  function encOpen(id){
+    const camp = findCampaign(id);
+    if(!camp) return;
+    encCampId = camp.id;
+    $("#enc-title").textContent = camp.name;
+    showScreen("enc");
+  }
+
+  function paintEnc(){
+    const camp = findCampaign(encCampId);
+    if(!camp) return showScreen("load");
+
+    const box = $("#enc-list");
+    box.innerHTML = "";
+    if(!camp.chars.length){
+      box.innerHTML = '<div class="empty">This campaign has no characters yet.</div>';
+    }
+    camp.chars.forEach(ch => {
+      const row = document.createElement("div");
+      row.className = "set-row enc-row";
+      // the <label> wraps only the tick and the name — if it wrapped the number
+      // box too, clicking into that box would toggle the tick off
+      row.innerHTML =
+        '<label class="enc-who"><input type="checkbox" checked>' +
+        faceHtml(ch) +
+        '<span class="who"><b>' + esc(ch.name) + '</b>' +
+        '<small>' + esc(charLine(ch)) + '</small></span></label>' +
+        // "—", not "roll": blank is not allowed here, unlike the add form
+        '<input type="number" class="enc-init" placeholder="—" aria-label="' +
+        esc(ch.name) + ' initiative">';
+      row.dataset.id = ch.id;
+      row.querySelector("input[type=checkbox]").addEventListener("change", encSync);
+      row.querySelector(".enc-init").addEventListener("input", encSync);
+      box.appendChild(row);
+    });
+
+    const crtBox = $("#enc-crt");
+    $("#enc-crt-panel").hidden = !camp.creatures.length;
+    crtBox.innerHTML = "";
+    camp.creatures.forEach(ch => {
+      const row = document.createElement("div");
+      row.className = "set-row enc-row";
+      row.innerHTML =
+        '<label class="enc-who"><input type="checkbox">' +
+        faceHtml(ch) +
+        '<span class="who"><b>' + esc(ch.name) + '</b>' +
+        '<small>' + esc(charLine(ch)) + '</small></span></label>' +
+        '<input type="number" class="enc-init" value="1" min="1" max="20" aria-label="' +
+        esc(ch.name) + ' count">';
+      row.dataset.id = ch.id;
+      row.querySelector("input[type=checkbox]").addEventListener("change", encSync);
+      const del = document.createElement("button");
+      del.type = "button"; del.className = "btn-sm btn-ghost"; del.textContent = "✕";
+      del.setAttribute("aria-label", "Forget " + ch.name);
+      del.addEventListener("click", () => {
+        askConfirm("Forget creature", "Remove " + ch.name + " from this campaign?", "Forget", () => {
+          camp.creatures = camp.creatures.filter(x => x.id !== ch.id);
+          saveCampaigns(); paintEnc();
+        });
+      });
+      row.appendChild(del);
+      crtBox.appendChild(row);
+    });
+
+    const hasBattle = !!(camp.battle && camp.battle.combatants.length);
+    $("#enc-resume").hidden = !hasBattle;
+    if(hasBattle){
+      $("#enc-resume").textContent =
+        "Resume " + (camp.battle.round ? "round " + camp.battle.round : "this battle");
+    }
+    encSync();
+  }
+
+  const encRows = sel => [...$(sel).querySelectorAll(".enc-row")]
+    .filter(r => r.querySelector("input[type=checkbox]").checked);
+
+  /* Start stays disabled until every ticked player has a number — the DM is
+     reading rolls off the table, and a silently rolled value would be wrong
+     without looking wrong. Creatures roll their own, so they never block it. */
+  function encSync(){
+    const party = encRows("#enc-list");
+    $("#enc-count").textContent = party.length;
+    [...$("#enc-list").querySelectorAll(".enc-row")].forEach(r => {
+      r.classList.toggle("off", !r.querySelector("input[type=checkbox]").checked);
+    });
+    const crt = encRows("#enc-crt");
+    const ready = (party.length + crt.length) > 0 &&
+                  party.every(r => r.querySelector(".enc-init").value.trim() !== "");
+    $("#enc-go").disabled = !ready;
+  }
+
+  function startEncounter(){
+    const camp = findCampaign(encCampId);
+    if(!camp) return;
+    const party = encRows("#enc-list"), crt = encRows("#enc-crt");
+
+    const go = () => {
+      state = blankState(state);
+      state.campaignId = camp.id;
+      const added = [], names = [];
+      party.forEach(r => {
+        const ch = camp.chars.find(x => x.id === r.dataset.id);
+        if(!ch) return;
+        const c = toCombatant(ch, r.querySelector(".enc-init").value);
+        insertByInit(c); added.push(c.id); names.push(ch.name + " " + c.init);
+      });
+      crt.forEach(r => {
+        const ch = camp.creatures.find(x => x.id === r.dataset.id);
+        if(!ch) return;
+        const qty = clamp(parseInt(r.querySelector(".enc-init").value, 10) || 1, 1, 20);
+        for(let i = 0; i < qty; i++){
+          const c = toCombatant(ch, d20() + (ch.mod || 0));
+          if(qty > 1) c.name = ch.name + " " + (i + 1);
+          insertByInit(c); added.push(c.id);
+        }
+      });
+      logEvent("system", camp.name + " — encounter begins");
+      if(names.length) logEvent("roster", "Party joined: " + names.join(", "));
+      save();
+      showScreen("track");
+      maybeAskTies(added);
+    };
+
+    if(state.combatants.length)
+      askConfirm("Start encounter",
+        "This clears the battle currently on the tracker and puts the chosen party on the board.",
+        "Start encounter", go);
+    else go();
+  }
+
+  function encResume(){
+    const camp = findCampaign(encCampId);
+    if(!camp || !camp.battle) return;
+    const go = () => {
+      const s = normalize(JSON.parse(JSON.stringify(camp.battle)));
+      if(!s) return;
+      // preferences belong to the device, not to the saved fight
+      ["fontScale","accent","reduceMotion","emojiFont","askTies","showHelp","showLog"]
+        .forEach(k => { s[k] = state[k]; });
+      s.campaignId = camp.id;
+      state = s;
+      save("quiet");
+      showScreen("track");
+    };
+    if(state.combatants.length && state.campaignId !== camp.id)
+      askConfirm("Resume battle",
+        "This replaces the battle currently on the tracker.", "Resume", go);
+    else go();
+  }
+
+  /* ---- quick play ---- */
+  function quickPlay(){
+    const go = () => { state = blankState(state); state.campaignId = null; save(); showScreen("track"); };
+    if(state.combatants.length)
+      askConfirm("Quick play",
+        "This clears the battle on the tracker and starts an empty one. Resume Battle on the menu is the only way back to it.",
+        "Clear and play", go);
+    else go();
+  }
+
+  /* ---- wiring ---- */
+  $("#m-resume").addEventListener("click", () => showScreen("track"));
+  $("#m-new").addEventListener("click", () => ccOpen(null));
+  $("#m-load").addEventListener("click", () => showScreen("load"));
+  $("#m-quick").addEventListener("click", quickPlay);
+  $("#m-settings").addEventListener("click", openSettings);
+
+  $("#cc-add").addEventListener("click", ccCommit);
+  $("#cc-cancel").addEventListener("click", ccReset);
+  $("#cc-back").addEventListener("click", ccLeave);
+  $("#cc-save").addEventListener("click", ccSave);
+  ccF.camp.addEventListener("input", () => { ccDirty = true; });
+  ccF.type.addEventListener("change", () => { if(!ccIcon) ccSyncIcon(); });
+  ccF.icon.addEventListener("click", e => {
+    e.stopPropagation();
+    openPicker(ccF.icon, v => { ccIcon = v; ccSyncIcon(); });
+  });
+  [ccF.name, ccF.player, ccF.cls, ccF.level, ccF.mod, ccF.ac, ccF.hp].forEach(el => {
+    el.addEventListener("keydown", e => { if(e.key === "Enter") ccCommit(); });
+  });
+
+  $("#ld-back").addEventListener("click", () => showScreen("menu"));
+
+  $("#enc-back").addEventListener("click", () => showScreen("menu"));
+  $("#enc-edit").addEventListener("click", () => ccOpen(encCampId));
+  $("#enc-go").addEventListener("click", startEncounter);
+  $("#enc-resume").addEventListener("click", encResume);
+  $("#enc-all").addEventListener("click", () => {
+    $("#enc-list").querySelectorAll("input[type=checkbox]").forEach(b => { b.checked = true; });
+    encSync();
+  });
+  $("#enc-none").addEventListener("click", () => {
+    $("#enc-list").querySelectorAll("input[type=checkbox]").forEach(b => { b.checked = false; });
+    encSync();
+  });
+
   /* ---------------- toolbar & keys ---------------- */
+  $("#btn-menu").addEventListener("click", e => {
+    e.currentTarget.blur();
+    stashBattle();
+    showScreen("menu");
+  });
   $("#btn-undo").addEventListener("click", e => { e.currentTarget.blur(); undo(); });
   $("#btn-redo").addEventListener("click", e => { e.currentTarget.blur(); redo(); });
   $("#btn-next").addEventListener("click", e => { e.currentTarget.blur(); step(1); });
@@ -2343,10 +3253,8 @@ unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+
     askConfirm("Clear all",
       "This removes every player and NPC from the tracker and resets the fight to round 0.",
       "Remove everyone", () => {
-        state = { round:0, activeId:null, askTies:state.askTies, showHelp:state.showHelp,
-                  emojiFont:state.emojiFont, showLog:state.showLog,
-                  fontScale:state.fontScale, accent:state.accent,
-                  reduceMotion:state.reduceMotion, log:[], combatants:[] };
+        // the campaign stays loaded — this clears the board, it does not leave
+        state = blankState(state);
         save(); render();
       });
   });
@@ -2577,7 +3485,7 @@ unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+
   document.addEventListener("keydown", e => {
     if(document.body.classList.contains("splash-up")) return;  // that key skipped the splash
     const inField = e.target && (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA");
-    if((e.ctrlKey || e.metaKey) && !inField){       // leave native text undo alone inside fields
+    if((e.ctrlKey || e.metaKey) && !inField && onTrack()){  // leave native text undo alone inside fields
       const k = e.key.toLowerCase();
       if(k === "z" && !e.shiftKey){ e.preventDefault(); undo(); return; }
       if(k === "y" || (k === "z" && e.shiftKey)){ e.preventDefault(); redo(); return; }
@@ -2591,9 +3499,15 @@ unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+
       if(addOpen()) return closeAdd();
       if(!els.dlg.classList.contains("hidden")) return closeDialog();
       if(!els.tie.classList.contains("hidden")){ tieQueue = []; els.tie.classList.add("hidden"); }
+      // last rung: a sub-screen steps back to the menu. The menu itself is the
+      // root, so Escape there does nothing rather than dropping into a fight.
+      const scr = document.body.dataset.screen;
+      if(scr === "chars") ccLeave();
+      else if(scr === "load" || scr === "enc") showScreen("menu");
       return;
     }
     if(modalOpen()) return;
+    if(!onTrack()) return;   // only the tracker steps turns on Space and the arrows
     const t = e.target;
     if(t && (t.tagName === "INPUT" || t.tagName === "SELECT" || t.tagName === "TEXTAREA")) return;
     if(e.key === " " || e.key === "ArrowRight"){ e.preventDefault(); step(1); }
@@ -2607,7 +3521,13 @@ unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+
   applyLogOpen();
   applyEmojiMode();
   syncIconBtn();
+  ccSyncIcon();
   render();
+  // The screen comes from the attribute on <body>, so the menu is already up —
+  // paint it rather than calling showScreen(), which would move focus while the
+  // splash is still covering everything.
+  if(!document.body.dataset.screen) document.body.dataset.screen = "menu";
+  paintMenu();
   lastSnap = snapshot();      // baseline: the first action becomes the first undo step
   updateHistoryButtons();
 })();
