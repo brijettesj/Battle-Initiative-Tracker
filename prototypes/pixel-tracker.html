@@ -1,0 +1,2273 @@
+<title>Roll Initiative 8-Bit</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap">
+<style>
+/* ============================================================
+   Roll Initiative — 8-bit prototype
+   A single-theme piece on purpose: this is a CRT arcade screen,
+   so every colour is painted explicitly and nothing borrows the
+   host ground.
+   ============================================================ */
+:root{
+  --void:#0d0b10;      /* CRT black, biased purple toward the accent */
+  --stone:#241d2b;     /* panel fill */
+  --stone-lit:#332a3d; /* raised fill */
+  --edge:#5a4a68;      /* default pixel border */
+  --edge-dim:#3d3348;
+
+  --blood:#a11d1d;
+  --blood-lit:#c92a2a;
+  --flame:#f26b3f;
+  --bone:#f2e8d5;
+  --dim:#9a8fa8;
+
+  --player:#4f9de0;
+  --ally:#6cc06a;
+  --enemy:#c94040;
+
+  --moss:#56b04a;
+  --gold:#e8c33c;
+
+  --px:4px;            /* one "pixel" */
+  --ui:"Press Start 2P","Courier New",monospace;
+  --crt:"VT323","Courier New",monospace;
+}
+
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0;
+  background:var(--void);
+  color:var(--bone);
+  font-family:var(--crt);
+  font-size:19px;
+  line-height:1.35;
+  image-rendering:pixelated;
+  -webkit-font-smoothing:none;
+  min-height:100vh;
+}
+img,canvas{max-width:100%;image-rendering:pixelated}
+
+/* Scanlines and vignette over everything. The whole conceit of the
+   page, so it gets to be the one loud move. */
+.crt-lines{
+  position:fixed;inset:0;z-index:60;pointer-events:none;
+  background:repeating-linear-gradient(
+    to bottom,
+    rgba(0,0,0,.28) 0px, rgba(0,0,0,.28) 1px,
+    rgba(0,0,0,0) 1px, rgba(0,0,0,0) 3px);
+  mix-blend-mode:multiply;
+}
+.crt-glow{
+  position:fixed;inset:0;z-index:59;pointer-events:none;
+  background:radial-gradient(120% 90% at 50% 0%, rgba(161,29,29,.16) 0%, rgba(0,0,0,0) 55%),
+             radial-gradient(140% 120% at 50% 50%, rgba(0,0,0,0) 55%, rgba(0,0,0,.6) 100%);
+}
+
+/* ---------- the pixel frame ----------
+   Four offset shadows instead of a border, so the corners come out
+   notched the way a tile-drawn NES window does. */
+.pxl{
+  position:relative;
+  background:var(--stone);
+  box-shadow:
+    0 calc(var(--px) * -1) 0 0 var(--edge),
+    0 var(--px) 0 0 var(--edge),
+    calc(var(--px) * -1) 0 0 0 var(--edge),
+    var(--px) 0 0 0 var(--edge);
+}
+.pxl-lit{ background:var(--stone-lit) }
+
+/* ---------- layout ---------- */
+.stage{
+  max-width:1320px;margin:0 auto;
+  padding-inline:20px;
+  padding-block:24px 72px;
+}
+.grid{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) 292px;
+  gap:26px;align-items:start;
+}
+.col{min-width:0;display:flex;flex-direction:column;gap:22px}
+
+/* ---------- title bar ---------- */
+.titlebar{
+  display:flex;align-items:center;gap:16px;flex-wrap:wrap;
+  margin-bottom:26px;
+}
+.wordmark{
+  font-family:var(--ui);
+  font-size:19px;line-height:1.5;
+  color:var(--flame);
+  margin:0;
+  text-shadow:var(--px) var(--px) 0 var(--blood), calc(var(--px)*2) calc(var(--px)*2) 0 #000;
+  letter-spacing:1px;
+}
+.wordmark small{
+  display:block;font-size:8px;margin-top:9px;color:var(--dim);
+  text-shadow:none;letter-spacing:2px;
+}
+.titlebar .gap{flex:1}
+
+/* Round plate — the HUD counter */
+.round-plate{
+  padding:10px 16px;text-align:center;
+  font-family:var(--ui);
+}
+.round-plate .lbl{display:block;font-size:8px;color:var(--dim);letter-spacing:2px}
+.round-plate .num{
+  display:block;font-size:24px;color:var(--gold);margin-top:8px;
+  text-shadow:var(--px) var(--px) 0 #000;font-variant-numeric:tabular-nums;
+}
+
+/* ---------- turn box ----------
+   Shaped like an RPG dialogue window, cursor and all. */
+.turnbox{
+  display:flex;align-items:center;gap:16px;flex-wrap:wrap;
+  padding:16px 18px;
+}
+.cursor{
+  color:var(--flame);font-size:22px;line-height:1;
+  animation:blink 1s steps(1,end) infinite;
+}
+@keyframes blink{50%{opacity:0}}
+.turn-who{flex:1;min-width:180px}
+.turn-who .eyebrow{
+  font-family:var(--ui);font-size:8px;color:var(--dim);letter-spacing:2px;
+  display:block;margin-bottom:8px;
+}
+.turn-who .who{
+  font-family:var(--ui);font-size:15px;color:var(--bone);
+  display:block;line-height:1.4;word-break:break-word;
+}
+.turn-meta{color:var(--dim);font-size:18px;margin-top:6px}
+.turn-meta .note{color:var(--gold)}
+
+/* ---------- buttons ---------- */
+button{font:inherit;color:inherit;cursor:pointer}
+.btn{
+  font-family:var(--ui);font-size:9px;letter-spacing:1px;
+  padding:11px 13px;border:0;background:var(--stone-lit);color:var(--bone);
+  box-shadow:
+    0 calc(var(--px) * -1) 0 0 var(--edge), 0 var(--px) 0 0 #000,
+    calc(var(--px) * -1) 0 0 0 var(--edge), var(--px) 0 0 0 #000;
+  transition:transform .06s steps(2), background .1s;
+}
+.btn:hover{background:#403552}
+.btn:active{transform:translate(var(--px),var(--px));box-shadow:
+    0 calc(var(--px) * -1) 0 0 var(--edge-dim), 0 var(--px) 0 0 var(--edge-dim),
+    calc(var(--px) * -1) 0 0 0 var(--edge-dim), var(--px) 0 0 0 var(--edge-dim)}
+.btn:focus-visible{outline:var(--px) solid var(--gold);outline-offset:var(--px)}
+.btn-go{
+  background:var(--blood);
+  box-shadow:
+    0 calc(var(--px) * -1) 0 0 var(--blood-lit), 0 var(--px) 0 0 #000,
+    calc(var(--px) * -1) 0 0 0 var(--blood-lit), var(--px) 0 0 0 #000;
+}
+.btn-go:hover{background:var(--blood-lit)}
+.btn-tiny{font-size:8px;padding:8px 10px}
+
+/* ---------- initiative row ---------- */
+.track{
+  display:flex;flex-wrap:wrap;gap:16px;
+  padding:20px 18px;min-height:120px;
+  align-content:flex-start;
+}
+.track .empty{
+  font-size:20px;color:var(--dim);text-align:center;width:100%;padding:18px 0;
+}
+.card{
+  width:142px;
+  padding:16px 14px 14px;
+  background:var(--stone-lit);
+  box-shadow:
+    0 calc(var(--px) * -1) 0 0 var(--edge-dim),
+    0 var(--px) 0 0 var(--edge-dim),
+    calc(var(--px) * -1) 0 0 0 var(--edge-dim),
+    var(--px) 0 0 0 var(--edge-dim);
+  position:relative;
+  touch-action:none;
+  transition:background .1s;
+}
+.card[data-type=player]{box-shadow:
+    0 calc(var(--px) * -1) 0 0 var(--player), 0 var(--px) 0 0 var(--player),
+    calc(var(--px) * -1) 0 0 0 var(--player), var(--px) 0 0 0 var(--player)}
+.card[data-type=ally]{box-shadow:
+    0 calc(var(--px) * -1) 0 0 var(--ally), 0 var(--px) 0 0 var(--ally),
+    calc(var(--px) * -1) 0 0 0 var(--ally), var(--px) 0 0 0 var(--ally)}
+.card[data-type=enemy]{box-shadow:
+    0 calc(var(--px) * -1) 0 0 var(--enemy), 0 var(--px) 0 0 var(--enemy),
+    calc(var(--px) * -1) 0 0 0 var(--enemy), var(--px) 0 0 0 var(--enemy)}
+.card:not(.active){filter:brightness(.78) saturate(.85)}
+.card.active{
+  background:#542a1c;
+  z-index:2;
+  box-shadow:
+    0 -4px 0 0 var(--flame), 0 4px 0 0 var(--flame),
+    -4px 0 0 0 var(--flame), 4px 0 0 0 var(--flame),
+    0 0 0 8px rgba(242,107,63,.26),
+    0 0 26px 6px rgba(242,107,63,.55);
+  animation:flameglow 1.5s ease-in-out infinite;
+}
+/* The torchlight on whoever is up. Edges stay put; only the halo breathes. */
+@keyframes flameglow{
+  0%,100%{
+    box-shadow:
+      0 -4px 0 0 var(--flame), 0 4px 0 0 var(--flame),
+      -4px 0 0 0 var(--flame), 4px 0 0 0 var(--flame),
+      0 0 0 8px rgba(242,107,63,.20),
+      0 0 22px 4px rgba(242,107,63,.42);
+  }
+  50%{
+    box-shadow:
+      0 -4px 0 0 var(--flame), 0 4px 0 0 var(--flame),
+      -4px 0 0 0 var(--flame), 4px 0 0 0 var(--flame),
+      0 0 0 8px rgba(242,107,63,.34),
+      0 0 38px 12px rgba(242,107,63,.72);
+  }
+}
+.card.active .cname{color:var(--bone);text-shadow:0 0 10px rgba(242,107,63,.9)}
+.card.active .port{box-shadow:inset 0 0 0 var(--px) #000, inset 0 0 18px rgba(242,107,63,.45)}
+/* The bobbing selector arrow above whoever is up. */
+.card.active::before{
+  content:"▼";position:absolute;top:-30px;left:50%;margin-left:-8px;
+  color:var(--flame);font-size:20px;line-height:1;
+  animation:bob .6s steps(2,end) infinite;
+}
+@keyframes bob{50%{transform:translateY(-5px)}}
+.card.down,.card.down:not(.active){filter:saturate(.12) brightness(.55)}
+.card.dragging{pointer-events:none;z-index:40;filter:brightness(1.25)}
+
+/* The frame clips the sprite. Badges hang off the wrapper outside it, so a
+   corner is never sliced off. */
+.port-wrap{position:relative;width:100%}
+.port{
+  position:relative;width:100%;aspect-ratio:1;
+  background:#17121d;
+  display:grid;place-items:center;
+  box-shadow:inset 0 0 0 var(--px) #000;
+  overflow:hidden;
+}
+.port canvas{width:100%;height:100%;display:block}
+.card.down .port::after{
+  content:"☠";position:absolute;inset:0;display:grid;place-items:center;
+  font-size:40px;color:var(--bone);text-shadow:0 0 8px #000;
+}
+.init-badge,.ac-badge{
+  position:absolute;z-index:3;
+  font-family:var(--ui);font-size:9px;line-height:1;
+  padding:6px 5px 5px;background:#000;color:var(--gold);
+  box-shadow:0 0 0 2px var(--gold);
+  min-width:24px;text-align:center;font-variant-numeric:tabular-nums;
+}
+.init-badge{top:-9px;left:-9px;cursor:text}
+.ac-badge{top:-9px;right:-9px;color:var(--bone);box-shadow:0 0 0 2px var(--edge)}
+.card.active .init-badge{box-shadow:0 0 0 2px var(--flame)}
+.badge-tag{
+  display:block;font-size:6px;letter-spacing:1px;color:var(--dim);margin-bottom:3px;
+}
+.init-badge input{
+  width:30px;background:#000;border:0;color:var(--gold);
+  font-family:var(--ui);font-size:9px;padding:0;text-align:center;
+}
+.corner{
+  position:absolute;z-index:3;bottom:-9px;width:24px;height:22px;padding:0;
+  background:var(--stone);border:0;color:var(--bone);
+  font-family:var(--ui);font-size:9px;line-height:22px;
+  box-shadow:0 0 0 2px var(--edge);
+  opacity:0;pointer-events:none;transition:opacity .1s;
+}
+.card:hover .corner,.card:focus-within .corner{opacity:1;pointer-events:auto}
+.c-del{right:-9px;color:var(--enemy)}
+.c-edit{left:-9px}
+
+.cname{
+  font-size:20px;line-height:1.15;margin-top:14px;
+  text-align:center;color:var(--bone);
+  word-break:break-word;
+}
+.card[data-type=player] .cname{color:var(--player)}
+.card[data-type=ally] .cname{color:var(--ally)}
+.card[data-type=enemy] .cname{color:var(--enemy)}
+
+/* HP as discrete pips — the whole reason to do this in 8-bit. */
+.hp{margin-top:10px;cursor:pointer}
+.pips{display:flex;gap:2px;height:12px;background:#000;padding:2px}
+.pip{flex:1;background:#2b2333}
+.pip.on{background:var(--moss)}
+.pip.warn{background:var(--gold)}
+.pip.bad{background:var(--blood-lit)}
+.pip.temp{background:var(--player)}
+.hp-txt{
+  font-family:var(--ui);font-size:8px;margin-top:7px;text-align:center;
+  color:var(--dim);font-variant-numeric:tabular-nums;
+}
+.hp-txt .tmp{color:var(--player)}
+.hp input{
+  width:100%;background:#000;border:0;color:var(--gold);
+  font-family:var(--ui);font-size:8px;padding:6px 4px;text-align:center;
+}
+
+.conds{
+  display:flex;flex-wrap:wrap;gap:4px;justify-content:center;
+  margin-top:10px;min-height:24px;padding:3px;cursor:pointer;
+  box-shadow:inset 0 0 0 2px var(--edge-dim);
+}
+.conds .chip{
+  display:flex;align-items:center;gap:2px;padding:2px 3px;background:#17121d;
+}
+.conds .chip canvas{width:16px;height:16px}
+.conds .chip b{font-family:var(--ui);font-size:7px;color:var(--gold)}
+.conds .addc{font-size:15px;color:var(--dim);padding:2px 4px}
+
+/* Floating damage numbers. */
+.float{
+  position:absolute;left:0;right:0;top:34%;text-align:center;
+  font-family:var(--ui);font-size:15px;pointer-events:none;z-index:30;
+  text-shadow:2px 2px 0 #000;
+  animation:rise 1s steps(8,end) forwards;
+}
+.float.dmg{color:var(--enemy)}
+.float.heal{color:var(--moss)}
+.float.temp{color:var(--player)}
+@keyframes rise{
+  0%{transform:translateY(6px);opacity:1}
+  100%{transform:translateY(-38px);opacity:0}
+}
+
+/* ---------- command menu (add form) ---------- */
+.menu{padding:18px}
+h2{
+  font-family:var(--ui);font-size:11px;color:var(--flame);
+  margin:0 0 18px;letter-spacing:1px;text-wrap:balance;
+}
+.fields{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end}
+.field{display:flex;flex-direction:column;gap:7px}
+.field label{
+  font-family:var(--ui);font-size:8px;color:var(--dim);letter-spacing:1px;
+}
+.field.grow{flex:1;min-width:150px}
+input,select{
+  font-family:var(--crt);font-size:19px;
+  background:#17121d;color:var(--bone);border:0;padding:8px 9px;
+  box-shadow:inset 0 0 0 2px var(--edge-dim);
+  width:100%;
+}
+input:focus,select:focus{outline:0;box-shadow:inset 0 0 0 2px var(--gold)}
+input::placeholder{color:#6b6076}
+.w-sm{width:78px}
+.w-xs{width:62px}
+.sprite-btn{
+  width:52px;height:46px;background:#17121d;border:0;padding:0;
+  box-shadow:inset 0 0 0 2px var(--edge-dim);
+  display:grid;place-items:center;
+}
+.sprite-btn canvas{width:32px;height:32px}
+.tools{display:flex;flex-wrap:wrap;gap:10px;margin-top:18px}
+.tools .gap{flex:1}
+.legend{
+  margin:18px 0 0;font-size:18px;color:var(--dim);line-height:1.5;
+  max-width:66ch;
+}
+.legend b{color:var(--bone);font-family:var(--ui);font-size:8px;letter-spacing:1px}
+kbd{
+  font-family:var(--ui);font-size:8px;background:#000;color:var(--gold);
+  padding:3px 5px;box-shadow:0 0 0 2px var(--edge-dim);
+}
+
+/* ---------- log rail ---------- */
+.log{display:flex;flex-direction:column;max-height:640px}
+.log-head{
+  display:flex;align-items:center;gap:10px;padding:14px 14px;
+  box-shadow:inset 0 calc(var(--px) * -1) 0 0 var(--edge-dim);
+}
+.log-head .t{font-family:var(--ui);font-size:9px;color:var(--flame);letter-spacing:1px}
+.log-head .gap{flex:1}
+.log-body{overflow-y:auto;padding:6px 14px 16px;scrollbar-width:thin}
+.log-div{
+  font-family:var(--ui);font-size:8px;color:var(--gold);letter-spacing:1px;
+  padding:14px 0 8px;position:sticky;top:0;background:var(--stone);
+}
+.log-row{
+  font-size:18px;line-height:1.35;padding:5px 0 5px 14px;color:var(--dim);
+  position:relative;
+}
+.log-row::before{content:"▸";position:absolute;left:0;color:var(--edge)}
+.log-row.damage{color:#e08a8a}
+.log-row.heal{color:#8fd188}
+.log-row.turn,.log-row.system{color:var(--bone)}
+.log-row.down{color:var(--enemy)}
+.log-empty{color:var(--dim);font-size:18px;padding:18px 0}
+
+/* ---------- popovers ---------- */
+.pop{
+  position:absolute;z-index:50;width:238px;padding:12px;
+  background:var(--stone);
+  box-shadow:0 0 0 var(--px) var(--edge), 0 8px 0 0 rgba(0,0,0,.5);
+}
+.pop.hidden{display:none}
+.pop .pop-t{
+  font-family:var(--ui);font-size:8px;color:var(--flame);
+  letter-spacing:1px;margin-bottom:12px;
+}
+.sprite-grid{
+  display:grid;grid-template-columns:repeat(6,1fr);gap:5px;
+  max-height:210px;overflow-y:auto;
+}
+.sprite-grid button{
+  background:#17121d;border:0;padding:4px;display:grid;place-items:center;
+}
+.sprite-grid button:hover{background:var(--blood)}
+.sprite-grid canvas{width:24px;height:24px}
+.cond-list{max-height:250px;overflow-y:auto;display:flex;flex-direction:column;gap:3px}
+.cond-row{
+  display:flex;align-items:center;gap:8px;padding:5px 6px;background:#17121d;
+}
+.cond-row:hover{background:#2b2333}
+.cond-row .tog{
+  flex:1;display:flex;align-items:center;gap:7px;background:none;border:0;
+  padding:0;text-align:left;font-size:18px;color:var(--dim);
+}
+.cond-row.on .tog{color:var(--bone)}
+.cond-row canvas{width:18px;height:18px;flex:none}
+.cond-row input{width:42px;padding:3px;font-size:16px;text-align:center}
+
+/* ---------- boot screen ---------- */
+#boot{
+  position:fixed;inset:0;z-index:70;background:var(--void);
+  display:grid;place-items:center;text-align:center;
+  transition:opacity .5s steps(5,end);
+}
+#boot canvas{width:150px;height:150px}
+#boot .t{
+  font-family:var(--ui);font-size:24px;color:var(--flame);margin-top:26px;
+  text-shadow:var(--px) var(--px) 0 var(--blood), calc(var(--px)*2) calc(var(--px)*2) 0 #000;
+  line-height:1.5;
+}
+#boot .s{font-family:var(--ui);font-size:8px;color:var(--dim);margin-top:16px;letter-spacing:3px}
+#boot .k{
+  font-family:var(--ui);font-size:9px;color:var(--bone);margin-top:44px;letter-spacing:2px;
+  animation:blink 0.9s steps(1,end) infinite;
+}
+body.booted #boot{opacity:0;pointer-events:none}
+
+
+/* ---------- confirmation ----------
+   A real dialog rather than confirm(), which a sandboxed frame blocks. */
+.overlay{
+  position:fixed;inset:0;z-index:80;background:rgba(6,4,9,.82);
+  display:grid;place-items:center;padding:20px;
+}
+.overlay.hidden{display:none}
+.dialog{max-width:430px;width:100%;padding:22px}
+.dialog h2{margin-bottom:14px}
+.dialog p{color:var(--dim);font-size:19px;margin:0 0 20px}
+
+/* ============================================================
+   Screens. One of five shows at a time, routed by
+   body[data-screen] the same way the real app does it.
+   ============================================================ */
+.stage,.scr{display:none}
+body[data-screen="track"] .stage{display:block}
+body[data-screen="menu"]  #scr-menu,
+body[data-screen="chars"] #scr-chars,
+body[data-screen="load"]  #scr-load,
+body[data-screen="enc"]   #scr-enc{display:block}
+
+.scr-in{
+  max-width:760px;margin:0 auto;
+  padding-inline:20px;
+  padding-block:40px 72px;
+  display:flex;flex-direction:column;gap:22px;
+}
+.scr-head{text-align:center;margin-bottom:6px}
+.scr-head h1{
+  font-family:var(--ui);font-size:21px;line-height:1.5;color:var(--flame);margin:0;
+  text-shadow:var(--px) var(--px) 0 var(--blood), calc(var(--px)*2) calc(var(--px)*2) 0 #000;
+  text-wrap:balance;
+}
+.scr-head .tagline{
+  display:block;font-family:var(--ui);font-size:8px;color:var(--dim);
+  letter-spacing:2px;margin-top:16px;
+}
+.scr-head canvas{width:88px;height:88px;margin-bottom:20px}
+.pane{padding:18px}
+.pane h2{margin-bottom:16px}
+.count-pill{
+  display:inline-block;font-family:var(--ui);font-size:8px;
+  background:#000;color:var(--gold);padding:5px 7px 4px;margin-left:8px;
+  box-shadow:0 0 0 2px var(--gold);vertical-align:middle;
+}
+
+/* ---------- the menu, as an RPG command list ---------- */
+.menu-list{display:flex;flex-direction:column;gap:10px}
+.menu-btn{
+  display:block;width:100%;text-align:left;position:relative;
+  padding:16px 18px 16px 42px;border:0;background:#17121d;
+  box-shadow:inset 0 0 0 2px var(--edge-dim);
+  transition:background .1s;
+}
+.menu-btn b{
+  display:block;font-family:var(--ui);font-size:12px;color:var(--bone);
+  letter-spacing:1px;line-height:1.4;
+}
+.menu-btn small{display:block;font-size:18px;color:var(--dim);margin-top:9px}
+/* The selector arrow, parked off the left until the row is picked. */
+.menu-btn::before{
+  content:"▶";position:absolute;left:16px;top:50%;margin-top:-10px;
+  color:var(--flame);font-size:18px;opacity:0;
+}
+.menu-btn:hover:not(:disabled),.menu-btn:focus-visible{background:#2b2333;outline:0}
+.menu-btn:hover:not(:disabled)::before,.menu-btn:focus-visible::before{opacity:1}
+.menu-btn:disabled{opacity:.42;cursor:not-allowed}
+.menu-btn.hot{box-shadow:inset 0 0 0 2px var(--flame)}
+.menu-btn.hot b{color:var(--flame)}
+.menu-btn[hidden]{display:none}
+
+/* ---------- party and campaign rows ---------- */
+.list{display:flex;flex-direction:column;gap:8px}
+.list .none{color:var(--dim);font-size:18px;padding:14px 2px}
+.prow{
+  display:flex;align-items:center;gap:12px;padding:10px 12px;background:#17121d;
+  box-shadow:inset 0 0 0 2px var(--edge-dim);
+}
+.prow canvas{width:34px;height:34px;flex:none}
+.prow .who{flex:1;min-width:0}
+.prow .who b{
+  display:block;font-family:var(--ui);font-size:10px;color:var(--bone);
+  line-height:1.4;word-break:break-word;
+}
+.prow .who small{display:block;font-size:17px;color:var(--dim);margin-top:6px}
+.prow.off{opacity:.4}
+.prow .enc-init{
+  width:76px;flex:none;text-align:center;
+  font-family:var(--ui);font-size:11px;padding:9px 4px;
+}
+.enc-who{display:flex;align-items:center;gap:12px;flex:1;min-width:0;cursor:pointer}
+
+/* A checkbox the browser cannot round off. */
+.tick{
+  appearance:none;-webkit-appearance:none;
+  width:24px;height:24px;flex:none;margin:0;position:relative;
+  background:#0d0b10;box-shadow:inset 0 0 0 2px var(--edge);cursor:pointer;
+}
+.tick:checked{background:var(--blood);box-shadow:inset 0 0 0 2px var(--flame)}
+.tick:checked::after{
+  content:"";position:absolute;left:6px;top:3px;width:8px;height:13px;
+  border-right:4px solid var(--bone);border-bottom:4px solid var(--bone);
+  transform:rotate(38deg);
+}
+.tick:focus-visible{outline:var(--px) solid var(--gold);outline-offset:2px}
+
+.scr-foot{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.scr-foot .gap{flex:1}
+.msg{color:var(--gold);font-size:18px;margin:14px 0 0}
+textarea{
+  font-family:var(--crt);font-size:19px;width:100%;min-height:76px;resize:vertical;
+  background:#17121d;color:var(--bone);border:0;padding:8px 9px;
+  box-shadow:inset 0 0 0 2px var(--edge-dim);
+}
+textarea:focus{outline:0;box-shadow:inset 0 0 0 2px var(--gold)}
+.campaign-tag{
+  font-family:var(--ui);font-size:8px;color:var(--dim);letter-spacing:1px;
+  align-self:center;
+}
+
+@media (max-width:860px){
+  .grid{grid-template-columns:minmax(0,1fr)}
+  .log{max-height:340px}
+}
+@media (max-width:460px){
+  body{font-size:18px}
+  .stage{padding-inline:16px}
+  .card{width:calc(50% - 8px)}
+  .scr-in{padding-inline:16px}
+  .prow{flex-wrap:wrap}
+  .prow .enc-init{width:100%}
+  .scr-head h1{font-size:16px}
+  .wordmark{font-size:14px}
+  .field.grow{min-width:110px}
+}
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation:none !important;transition-duration:.001s !important}
+  .cursor,#boot .k{opacity:1}
+}
+</style>
+
+<script>document.body.dataset.screen="menu";</script>
+<div class="crt-glow"></div>
+<div class="crt-lines"></div>
+
+<div id="boot">
+  <div>
+    <canvas id="boot-sprite" width="20" height="20"></canvas>
+    <div class="t">ROLL<br>INITIATIVE</div>
+    <div class="s">A DUNGEON BATTLE TRACKER</div>
+    <div class="k">PRESS ANY KEY</div>
+  </div>
+</div>
+
+<div class="stage">
+  <div class="titlebar">
+    <button class="btn btn-tiny" id="btn-menu" title="Back to the main menu">&#9776; MENU</button>
+    <h1 class="wordmark">ROLL INITIATIVE<small id="stage-sub">8-BIT PROTOTYPE</small></h1>
+    <div class="gap"></div>
+    <div class="round-plate pxl">
+      <span class="lbl">ROUND</span>
+      <span class="num" id="round-num">0</span>
+    </div>
+  </div>
+
+  <div class="grid">
+    <div class="col">
+
+      <div class="turnbox pxl">
+        <span class="cursor">▶</span>
+        <div class="turn-who">
+          <span class="eyebrow">NOW ACTING</span>
+          <span class="who" id="turn-name">—</span>
+          <div class="turn-meta" id="turn-meta"></div>
+        </div>
+        <button class="btn" id="btn-prev">← BACK</button>
+        <button class="btn btn-go" id="btn-next">NEXT TURN →</button>
+      </div>
+
+      <div class="track pxl" id="track"></div>
+
+      <div class="menu pxl">
+        <h2>ADD TO THE BATTLE</h2>
+        <div class="fields">
+          <div class="field">
+            <label for="f-icon">SPRITE</label>
+            <button type="button" class="sprite-btn" id="f-icon"></button>
+          </div>
+          <div class="field grow">
+            <label for="f-name">NAME</label>
+            <input type="text" id="f-name" placeholder="Goblin Archer" autocomplete="off">
+          </div>
+          <div class="field">
+            <label for="f-type">SIDE</label>
+            <select id="f-type">
+              <option value="player">Player</option>
+              <option value="ally">Ally</option>
+              <option value="enemy" selected>Enemy</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="f-init">INIT</label>
+            <input type="number" id="f-init" class="w-sm" placeholder="roll">
+          </div>
+          <div class="field">
+            <label for="f-mod">DEX</label>
+            <input type="number" id="f-mod" class="w-xs" value="0">
+          </div>
+          <div class="field">
+            <label for="f-ac">AC</label>
+            <input type="number" id="f-ac" class="w-xs" placeholder="—" min="0">
+          </div>
+          <div class="field">
+            <label for="f-hp">MAX HP</label>
+            <input type="number" id="f-hp" class="w-sm" placeholder="—" min="0">
+          </div>
+          <div class="field">
+            <label for="f-qty">QTY</label>
+            <input type="number" id="f-qty" class="w-xs" value="1" min="1" max="12">
+          </div>
+          <button class="btn" id="btn-roll" title="Roll d20 + Dex into the initiative box">🎲 ROLL</button>
+          <button class="btn btn-go" id="btn-add">+ ADD</button>
+        </div>
+
+        <div class="tools">
+          <button class="btn btn-tiny" id="btn-sort">↓ SORT BY INIT</button>
+          <button class="btn btn-tiny" id="btn-reroll">🎲 REROLL ALL</button>
+          <div class="gap"></div>
+          <button class="btn btn-tiny" id="btn-keep" hidden
+                  title="Save whoever is up to this campaign for a later fight">+ KEEP CREATURE</button>
+          <button class="btn btn-tiny" id="btn-newfight">NEW BATTLE</button>
+        </div>
+
+        <p class="legend">
+          <b>HP</b> — click a health bar, then type <kbd>-7</kbd> for damage, <kbd>+4</kbd> to heal,
+          <kbd>22</kbd> to set it, or <kbd>t8</kbd> for temporary HP. Damage eats temp HP first.<br>
+          <b>ORDER</b> — drag a sprite to move it. Tap one to jump the turn to that character.<br>
+          <b>CONDITIONS</b> — click the strip under a name. Give one a number and it counts down at
+          the end of that character's turn, then falls off by itself.<br>
+          <b>KEYS</b> — <kbd>SPACE</kbd> or <kbd>→</kbd> advances, <kbd>←</kbd> steps back.
+        </p>
+      </div>
+    </div>
+
+    <aside class="log pxl">
+      <div class="log-head">
+        <span class="t">BATTLE LOG</span>
+        <div class="gap"></div>
+        <button class="btn btn-tiny" id="log-clear">CLEAR</button>
+      </div>
+      <div class="log-body" id="log-body"></div>
+    </aside>
+  </div>
+</div>
+
+
+<!-- ============================================================
+     The four screens in front of the tracker. Siblings of .stage,
+     shown one at a time by body[data-screen].
+     ============================================================ -->
+<div class="scr" id="scr-menu">
+  <div class="scr-in">
+    <div class="scr-head">
+      <canvas id="menu-sprite" width="20" height="20"></canvas>
+      <h1>ROLL INITIATIVE</h1>
+      <span class="tagline">A DUNGEON BATTLE TRACKER</span>
+    </div>
+
+    <div class="pane pxl">
+      <h2>BEGIN</h2>
+      <div class="menu-list">
+        <button type="button" id="m-resume" class="menu-btn hot" hidden>
+          <b>Resume Battle</b><small id="m-resume-say"></small>
+        </button>
+        <button type="button" id="m-new" class="menu-btn">
+          <b>New Campaign</b><small>Enter your players once, then bring them to every encounter.</small>
+        </button>
+        <button type="button" id="m-load" class="menu-btn">
+          <b>Load Campaign</b><small id="m-load-say">No campaigns saved yet.</small>
+        </button>
+        <button type="button" id="m-quick" class="menu-btn">
+          <b>Quick Play</b><small>Straight to the tracker. Nothing is kept in a campaign.</small>
+        </button>
+      </div>
+    </div>
+
+    <div class="scr-foot">
+      <div class="gap"></div>
+      <button class="btn btn-tiny" id="m-demo">RELOAD DEMO</button>
+    </div>
+  </div>
+</div>
+
+<div class="scr" id="scr-chars">
+  <div class="scr-in">
+    <div class="scr-head">
+      <h1 id="cc-title">NEW CAMPAIGN</h1>
+      <span class="tagline">YOUR PLAYERS, ENTERED ONCE</span>
+    </div>
+
+    <div class="pane pxl">
+      <h2>CAMPAIGN</h2>
+      <div class="field grow">
+        <label for="cc-camp">NAME</label>
+        <input type="text" id="cc-camp" placeholder="Curse of the Ember Vale" autocomplete="off">
+      </div>
+    </div>
+
+    <div class="pane pxl">
+      <h2 id="cc-formhead">ADD A CHARACTER</h2>
+      <div class="fields">
+        <div class="field">
+          <label for="cc-icon">SPRITE</label>
+          <button type="button" class="sprite-btn" id="cc-icon"></button>
+        </div>
+        <div class="field grow">
+          <label for="cc-name">NAME</label>
+          <input type="text" id="cc-name" placeholder="Ilyana Vex" autocomplete="off">
+        </div>
+        <div class="field grow">
+          <label for="cc-player">PLAYER</label>
+          <input type="text" id="cc-player" placeholder="Sam" autocomplete="off">
+        </div>
+        <div class="field grow">
+          <label for="cc-class">CLASS</label>
+          <input type="text" id="cc-class" placeholder="Paladin" autocomplete="off">
+        </div>
+        <div class="field">
+          <label for="cc-level">LVL</label>
+          <input type="number" id="cc-level" class="w-xs" placeholder="&mdash;" min="0" max="20">
+        </div>
+        <div class="field">
+          <label for="cc-type">SIDE</label>
+          <select id="cc-type">
+            <option value="player" selected>Player</option>
+            <option value="ally">Ally</option>
+            <option value="enemy">Enemy</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="cc-mod" title="Added to the die roll you type at the start of a fight">INIT MOD</label>
+          <input type="number" id="cc-mod" class="w-xs" value="0">
+        </div>
+        <div class="field">
+          <label for="cc-ac">AC</label>
+          <input type="number" id="cc-ac" class="w-xs" placeholder="&mdash;" min="0">
+        </div>
+        <div class="field">
+          <label for="cc-hp">MAX HP</label>
+          <input type="number" id="cc-hp" class="w-sm" placeholder="&mdash;" min="0">
+        </div>
+        <button class="btn btn-go" id="cc-add">+ ADD</button>
+        <button class="btn btn-tiny" id="cc-cancel" hidden>CANCEL EDIT</button>
+      </div>
+      <div class="field" style="margin-top:16px">
+        <label for="cc-notes">NOTES</label>
+        <textarea id="cc-notes" placeholder="Resistant to fire &middot; darkvision 60 ft."></textarea>
+      </div>
+    </div>
+
+    <div class="pane pxl">
+      <h2>THE PARTY <span class="count-pill" id="cc-count">0</span></h2>
+      <div class="list" id="cc-list"></div>
+      <p class="msg" id="cc-msg"></p>
+    </div>
+
+    <div class="scr-foot">
+      <button class="btn" id="cc-back">&larr; MENU</button>
+      <div class="gap"></div>
+      <button class="btn btn-go" id="cc-save">SAVE CAMPAIGN &rarr;</button>
+    </div>
+  </div>
+</div>
+
+<div class="scr" id="scr-load">
+  <div class="scr-in">
+    <div class="scr-head">
+      <h1>LOAD CAMPAIGN</h1>
+      <span class="tagline">CHOOSE A CAMPAIGN</span>
+    </div>
+
+    <div class="pane pxl">
+      <h2>CAMPAIGNS <span class="count-pill" id="ld-count">0</span></h2>
+      <div class="list" id="ld-list"></div>
+    </div>
+
+    <div class="scr-foot">
+      <button class="btn" id="ld-back">&larr; MENU</button>
+      <div class="gap"></div>
+    </div>
+  </div>
+</div>
+
+<div class="scr" id="scr-enc">
+  <div class="scr-in">
+    <div class="scr-head">
+      <h1 id="enc-title">WHO IS HERE</h1>
+      <span class="tagline">TICK WHO IS AT THE TABLE TONIGHT</span>
+    </div>
+
+    <div class="pane pxl">
+      <h2>THE PARTY <span class="count-pill" id="enc-count">0</span></h2>
+      <div class="list" id="enc-list"></div>
+      <div class="tools">
+        <button class="btn btn-tiny" id="enc-all">EVERYONE</button>
+        <button class="btn btn-tiny" id="enc-none">NOBODY</button>
+        <div class="gap"></div>
+        <button class="btn btn-tiny" id="enc-edit">&#9998; EDIT PARTY</button>
+      </div>
+      <p class="legend">
+        <b>INITIATIVE</b> &mdash; type what each player rolled. Every name you have ticked needs a
+        number before the encounter can start. Monsters are added on the tracker as usual.
+      </p>
+    </div>
+
+    <div class="pane pxl" id="enc-crt-panel" hidden>
+      <h2>CREATURES</h2>
+      <div class="list" id="enc-crt"></div>
+      <p class="legend">Saved from earlier fights. They roll their own initiative when the encounter begins.</p>
+    </div>
+
+    <div class="scr-foot">
+      <button class="btn" id="enc-back">&larr; MENU</button>
+      <div class="gap"></div>
+      <button class="btn btn-tiny" id="enc-resume" hidden>RESUME THIS BATTLE</button>
+      <button class="btn btn-go" id="enc-go" disabled>START ENCOUNTER &rarr;</button>
+    </div>
+  </div>
+</div>
+
+
+<div id="ask" class="overlay hidden">
+  <div class="dialog pxl">
+    <h2 id="ask-title">CONFIRM</h2>
+    <p id="ask-say"></p>
+    <div class="scr-foot">
+      <div class="gap"></div>
+      <button class="btn" id="ask-no">CANCEL</button>
+      <button class="btn btn-go" id="ask-yes">CONFIRM</button>
+    </div>
+  </div>
+</div>
+
+<div id="picker" class="pop hidden">
+  <div class="pop-t">CHOOSE A SPRITE</div>
+  <div class="sprite-grid" id="sprite-grid"></div>
+</div>
+
+<div id="cond-menu" class="pop hidden">
+  <div class="pop-t" id="cond-head">CONDITIONS</div>
+  <div class="cond-list" id="cond-grid"></div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  /* ============================================================
+     Sprites. Every icon is an emoji drawn into a 20x20 canvas and
+     then upscaled by the browser with nearest-neighbour, which is
+     what turns the platform emoji into an actual pixel sprite.
+     ============================================================ */
+  const RES = 20;
+  const TEXT_DEFAULT = new Set(["⚔","🛡","🗡","🕷","🕸","🕶","⛓","⬇","❄","✊","✨","⚡","💨","🏹"]);
+  const emo = ch => TEXT_DEFAULT.has(ch) ? ch + "️" : ch;
+
+  function sprite(ch, res){
+    const n = res || RES;
+    const cv = document.createElement("canvas");
+    cv.width = n; cv.height = n;
+    const g = cv.getContext("2d");
+    g.imageSmoothingEnabled = false;
+    g.textAlign = "center";
+    g.textBaseline = "middle";
+    g.font = Math.round(n * 0.92) + "px " +
+      '"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif';
+    g.fillText(emo(ch), n / 2, n / 2 + 1);
+    return cv;
+  }
+
+  const EMOJI = ["🧝","🧙","🛡","⚔","🏹","🗡","🪓","🔮","🐺","🐉","👹","👺","💀","🧟","🧛","👻",
+                 "🕷","🦇","🐻","🐗","🦅","🐍","🦂","🦈","🐙","🧌","👽","🤖","🔥","❄","⚡","🧚",
+                 "🧞","🦉","🐈","🐴","🦌","🐀","🍄","📜","💰","🗿","🌳","🦂"];
+  const DEFAULT_ICON = {player:"🧝", ally:"🛡", enemy:"👹"};
+
+  const CONDITIONS = [
+    {k:"blinded",e:"🕶",n:"Blinded"},        {k:"charmed",e:"💞",n:"Charmed"},
+    {k:"deafened",e:"🔇",n:"Deafened"},      {k:"frightened",e:"😱",n:"Frightened"},
+    {k:"grappled",e:"✊",n:"Grappled"},       {k:"incapacitated",e:"💫",n:"Incapacitated"},
+    {k:"invisible",e:"👤",n:"Invisible"},    {k:"paralyzed",e:"⚡",n:"Paralyzed"},
+    {k:"petrified",e:"🗿",n:"Petrified"},    {k:"poisoned",e:"🧪",n:"Poisoned"},
+    {k:"prone",e:"⬇",n:"Prone"},            {k:"restrained",e:"⛓",n:"Restrained"},
+    {k:"stunned",e:"🌟",n:"Stunned"},        {k:"unconscious",e:"😵",n:"Unconscious"},
+    {k:"exhaustion",e:"🥱",n:"Exhaustion"},  {k:"concentrating",e:"🌀",n:"Concentrating"},
+    {k:"blessed",e:"✨",n:"Blessed"},         {k:"hasted",e:"💨",n:"Hasted"},
+    {k:"slowed",e:"🐌",n:"Slowed"},          {k:"raging",e:"🔥",n:"Raging"}
+  ];
+  const COND = {};
+  CONDITIONS.forEach(c => COND[c.k] = c);
+
+  const $ = s => document.querySelector(s);
+  const clamp = (n, lo, hi) => Math.max(lo, Math.min(hi, n));
+  const d20 = () => 1 + Math.floor(Math.random() * 20);
+  let seq = 0;
+  const uid = () => "c" + (++seq);
+
+  /* ---------------- demo encounter ----------------
+     The prototype opens mid-fight on purpose: an empty tracker
+     shows nothing about how the thing plays. */
+  function demoState(){
+    seq = 0;
+    const mk = (name, type, icon, init, mod, ac, hp, maxHp, conds, notes) => ({
+      id:uid(), name, type, icon, init, mod, ac, hp, maxHp,
+      tempHp:0, notes:notes || "", conds:conds || []
+    });
+    return {
+      round:2,
+      activeId:"c3",
+      campaignId:null,
+      combatants:[
+        mk("Thalia", "player", "🧙", 21, 3, 15, 34, 38, [{k:"concentrating",n:0}], "Holding a wall of fire"),
+        mk("Bram", "player", "🛡", 18, 1, 20, 41, 52, [{k:"blessed",n:3}]),
+        mk("Wolf 1", "enemy", "🐺", 17, 2, 13, 11, 11, []),
+        mk("Wolf 2", "enemy", "🐺", 14, 2, 13, 0, 11, []),
+        mk("Kelda", "enemy", "🧌", 12, 1, 16, 47, 60, [{k:"raging",n:0}], "Reckless attacks · resists slashing"),
+        mk("Nyx", "ally", "🐈", 9, 4, 12, 5, 5, [], "Thalia's familiar"),
+        mk("Grumm", "player", "🪓", 6, 0, 14, 22, 45, [{k:"poisoned",n:2}])
+      ],
+      log:[
+        {k:"system", x:"Battle begins — Thalia acts first", round:1},
+        {k:"turn",   x:"Thalia's turn", round:1},
+        {k:"cond",   x:"Thalia is now Concentrating", round:1},
+        {k:"damage", x:"Wolf 2 took 9 damage · 11 → 2", round:1},
+        {k:"turn",   x:"Bram's turn", round:1},
+        {k:"cond",   x:"Bram is now Blessed (4)", round:1},
+        {k:"damage", x:"Kelda took 13 damage · 60 → 47", round:1},
+        {k:"turn",   x:"Kelda's turn", round:2},
+        {k:"damage", x:"Grumm took 14 damage · 36 → 22", round:2},
+        {k:"cond",   x:"Grumm is now Poisoned (3)", round:2},
+        {k:"turn",   x:"Wolf 1's turn", round:2},
+        {k:"damage", x:"Wolf 2 took 2 damage · 2 → 0", round:2},
+        {k:"down",   x:"Wolf 2 is down at 0 HP", round:2}
+      ]
+    };
+  }
+
+  let state = demoState();
+  let pendingIcon = null;
+
+  /* ---------------- log ---------------- */
+  function logEvent(kind, text){
+    state.log.push({k:kind, x:text, round:state.round});
+    if(state.log.length > 300) state.log.splice(0, state.log.length - 300);
+  }
+
+  function renderLog(){
+    const body = $("#log-body");
+    body.innerHTML = "";
+    if(!state.log.length){
+      body.innerHTML = '<div class="log-empty">Nothing has happened yet. Every hit, heal, ' +
+                       'condition and turn lands here as you play.</div>';
+      return;
+    }
+    let lastRound = null;
+    for(let i = state.log.length - 1; i >= 0; i--){
+      const e = state.log[i];
+      if(e.round !== lastRound){
+        const d = document.createElement("div");
+        d.className = "log-div";
+        d.textContent = e.round === 0 ? "BEFORE THE BATTLE" : "ROUND " + e.round;
+        body.appendChild(d);
+        lastRound = e.round;
+      }
+      const r = document.createElement("div");
+      r.className = "log-row " + e.k;
+      r.textContent = e.x;
+      body.appendChild(r);
+    }
+  }
+
+  /* ---------------- render ---------------- */
+  const track = $("#track");
+
+  function render(){
+    const list = state.combatants;
+    if(state.activeId && !list.some(c => c.id === state.activeId)) state.activeId = null;
+    if(state.round === 0) state.activeId = null;
+    else if(!state.activeId && list.length) state.activeId = list[0].id;
+
+    $("#round-num").textContent = state.round;
+    const a = list.find(c => c.id === state.activeId);
+    $("#btn-next").textContent = state.round === 0 ? "START BATTLE →" : "NEXT TURN →";
+    $("#turn-name").textContent = a ? a.name.toUpperCase()
+                                    : (list.length ? "NOT STARTED" : "—");
+    $("#turn-name").style.color = a ? sideColor(a.type) : "var(--dim)";
+    $("#turn-meta").innerHTML = a ? metaLine(a) : "";
+
+    // the header says which campaign is on the board, and keeping a creature
+    // only means anything when there is one
+    const camp = state.campaignId && findCampaign(state.campaignId);
+    $("#stage-sub").textContent = camp ? camp.name : "QUICK PLAY";
+    $("#btn-keep").hidden = !camp || !a;
+
+    renderLog();
+
+    track.innerHTML = "";
+    if(!list.length){
+      const p = document.createElement("div");
+      p.className = "empty";
+      p.textContent = "No one has rolled yet. Add your players and monsters below.";
+      track.appendChild(p);
+      return;
+    }
+    list.forEach(c => track.appendChild(cardEl(c)));
+  }
+
+  const sideColor = t => t === "player" ? "var(--player)"
+                       : t === "ally"   ? "var(--ally)" : "var(--enemy)";
+
+  function esc(s){
+    return String(s).replace(/[&<>"]/g, ch =>
+      ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[ch]));
+  }
+
+  function metaLine(c){
+    const bits = [];
+    if(c.ac) bits.push("AC " + c.ac);
+    if(c.maxHp) bits.push(c.hp + " / " + c.maxHp + (c.tempHp ? " +" + c.tempHp + " temp" : ""));
+    if(c.conds.length) bits.push(c.conds.map(x =>
+      COND[x.k].n + (x.n > 0 ? " (" + x.n + ")" : "")).join(", "));
+    let out = bits.join(" · ");
+    if(c.notes) out += (out ? "<br>" : "") + '<span class="note">' + esc(c.notes) + "</span>";
+    return out;
+  }
+
+  function cardEl(c){
+    const card = document.createElement("div");
+    card.className = "card";
+    card.dataset.id = c.id;
+    card.dataset.type = c.type;
+    if(c.id === state.activeId) card.classList.add("active");
+    if(c.maxHp > 0 && c.hp <= 0) card.classList.add("down");
+
+    // The frame clips the sprite, so the badges hang off the wrapper around it.
+    const wrap = document.createElement("div");
+    wrap.className = "port-wrap";
+
+    const port = document.createElement("div");
+    port.className = "port";
+    port.appendChild(sprite(c.icon));
+    wrap.appendChild(port);
+
+    const tag = text => {
+      const t = document.createElement("span");
+      t.className = "badge-tag";
+      t.textContent = text;
+      return t;
+    };
+
+    const badge = document.createElement("div");
+    badge.className = "init-badge";
+    badge.title = "Initiative — click to edit";
+    badge.appendChild(tag("INIT"));
+    badge.appendChild(document.createTextNode(c.init));
+    badge.addEventListener("click", e => { e.stopPropagation(); editInit(c, badge); });
+    wrap.appendChild(badge);
+
+    if(c.ac > 0){
+      const ac = document.createElement("div");
+      ac.className = "ac-badge";
+      ac.title = "Armour Class " + c.ac;
+      ac.appendChild(tag("AC"));
+      ac.appendChild(document.createTextNode(c.ac));
+      wrap.appendChild(ac);
+    }
+
+    const del = document.createElement("button");
+    del.className = "corner c-del";
+    del.textContent = "X";
+    del.title = "Remove " + c.name;
+    del.addEventListener("click", e => {
+      e.stopPropagation();
+      state.combatants = state.combatants.filter(o => o.id !== c.id);
+      logEvent("roster", c.name + " left the battle");
+      render();
+    });
+    wrap.appendChild(del);
+
+    const ed = document.createElement("button");
+    ed.className = "corner c-edit";
+    ed.textContent = "✎";
+    ed.title = "Cycle side";
+    ed.addEventListener("click", e => {
+      e.stopPropagation();
+      const order = ["player","ally","enemy"];
+      c.type = order[(order.indexOf(c.type) + 1) % 3];
+      logEvent("roster", c.name + " is now on the " + c.type + " side");
+      render();
+    });
+    wrap.appendChild(ed);
+
+    card.appendChild(wrap);
+
+    const nm = document.createElement("div");
+    nm.className = "cname";
+    nm.textContent = c.name;
+    if(c.notes) nm.title = c.notes;
+    card.appendChild(nm);
+
+    card.appendChild(condRow(c));
+    if(c.maxHp > 0) card.appendChild(hpEl(c));
+
+    card.addEventListener("pointerdown", e => onPointerDown(e, card));
+    return card;
+  }
+
+  function condRow(c){
+    const row = document.createElement("div");
+    row.className = "conds";
+    row.title = "Click to set conditions";
+    c.conds.forEach(x => {
+      const s = document.createElement("span");
+      s.className = "chip";
+      s.appendChild(sprite(COND[x.k].e, 16));
+      if(x.n > 0){
+        const b = document.createElement("b");
+        b.textContent = x.n;
+        s.appendChild(b);
+      }
+      s.title = COND[x.k].n + (x.n > 0 ? " — " + x.n + " round" + (x.n === 1 ? "" : "s") + " left"
+                                       : " — no time limit");
+      row.appendChild(s);
+    });
+    if(!c.conds.length){
+      const a = document.createElement("span");
+      a.className = "addc";
+      a.textContent = "+";
+      row.appendChild(a);
+    }
+    row.addEventListener("click", e => { e.stopPropagation(); openCondMenu(c, row); });
+    return row;
+  }
+
+  const PIPS = 12;
+  function hpEl(c){
+    const wrap = document.createElement("div");
+    wrap.className = "hp";
+    wrap.title = "Click, then type  -7  ·  +4  ·  22  ·  t8";
+
+    const bar = document.createElement("div");
+    bar.className = "pips";
+    const pct = clamp(c.hp / c.maxHp, 0, 1);
+    const filled = c.hp > 0 ? Math.max(1, Math.round(pct * PIPS)) : 0;
+    const temp = c.tempHp > 0
+      ? clamp(Math.round((c.tempHp / c.maxHp) * PIPS), 1, PIPS - filled) : 0;
+    const tone = pct <= 0.25 ? "bad" : pct <= 0.5 ? "warn" : "on";
+    for(let i = 0; i < PIPS; i++){
+      const p = document.createElement("i");
+      p.className = "pip" + (i < filled ? " " + tone
+                           : i < filled + temp ? " temp" : "");
+      bar.appendChild(p);
+    }
+    wrap.appendChild(bar);
+
+    const txt = document.createElement("div");
+    txt.className = "hp-txt";
+    txt.innerHTML = c.hp + "/" + c.maxHp +
+      (c.tempHp > 0 ? ' <span class="tmp">+' + c.tempHp + "</span>" : "");
+    wrap.appendChild(txt);
+
+    wrap.addEventListener("click", e => { e.stopPropagation(); editHp(c, wrap); });
+    return wrap;
+  }
+
+  function floatText(id, text, kind){
+    const card = track.querySelector('.card[data-id="' + id + '"]');
+    if(!card) return;
+    const f = document.createElement("div");
+    f.className = "float " + kind;
+    f.textContent = text;
+    card.appendChild(f);
+    setTimeout(() => f.remove(), 1000);
+  }
+
+  /* ---------------- inline editing ---------------- */
+  function inlineInput(host, value, placeholder, commit){
+    const inp = document.createElement("input");
+    inp.type = "text";
+    inp.value = value;
+    if(placeholder) inp.placeholder = placeholder;
+    host.textContent = "";
+    host.appendChild(inp);
+    inp.focus(); inp.select();
+    let live = true;
+    const done = () => { if(!live) return; live = false; commit(inp.value); render(); };
+    inp.addEventListener("blur", done);
+    inp.addEventListener("keydown", e => {
+      e.stopPropagation();
+      if(e.key === "Enter") done();
+      if(e.key === "Escape"){ live = false; render(); }
+    });
+    inp.addEventListener("pointerdown", e => e.stopPropagation());
+    inp.addEventListener("click", e => e.stopPropagation());
+  }
+
+  function editInit(c, badge){
+    if(badge.querySelector("input")) return;
+    const before = c.init;
+    inlineInput(badge, c.init, "", v => {
+      const n = parseInt(v, 10);
+      if(!isNaN(n) && n !== before){
+        c.init = n;
+        logEvent("order", c.name + "'s initiative changed " + before + " → " + n);
+      }
+    });
+  }
+
+  function editHp(c, wrap){
+    if(wrap.querySelector("input")) return;
+    const keep = wrap.innerHTML;
+    inlineInput(wrap, "", "-7  +4  22  t8", raw => {
+      raw = raw.trim();
+      if(!raw){ wrap.innerHTML = keep; return; }
+      const before = c.hp;
+
+      if(/^t/i.test(raw)){                       // t8 → 8 temporary HP
+        const n = parseInt(raw.slice(1), 10);
+        if(isNaN(n)) return;
+        c.tempHp = Math.max(0, n);
+        logEvent("temp", c.name + " gained " + c.tempHp + " temporary HP");
+        pending = {id:c.id, text:"+" + c.tempHp + " TEMP", kind:"temp"};
+        return;
+      }
+      const n = parseInt(raw.replace(/^\+/, ""), 10);
+      if(isNaN(n)) return;
+
+      if(/^-/.test(raw)){                        // damage — temp HP soaks it first
+        const dmg = -n;
+        const fromTemp = Math.min(c.tempHp, dmg);
+        c.tempHp -= fromTemp;
+        c.hp = Math.max(0, c.hp - (dmg - fromTemp));
+        logEvent("damage", c.name + " took " + dmg + " damage" +
+          (fromTemp ? " (" + fromTemp + " soaked by temp HP)" : "") +
+          " · " + before + " → " + c.hp);
+        pending = {id:c.id, text:"-" + dmg, kind:"dmg"};
+      } else if(/^\+/.test(raw)){
+        c.hp = clamp(c.hp + n, 0, c.maxHp);
+        logEvent("heal", c.name + " healed " + (c.hp - before) + " · " + before + " → " + c.hp);
+        pending = {id:c.id, text:"+" + (c.hp - before), kind:"heal"};
+      } else {
+        c.hp = clamp(n, 0, c.maxHp);
+        logEvent("heal", c.name + "'s HP set to " + c.hp + " / " + c.maxHp);
+      }
+      if(before > 0 && c.hp === 0) logEvent("down", c.name + " is down at 0 HP");
+      else if(before === 0 && c.hp > 0) logEvent("heal", c.name + " is back up at " + c.hp + " HP");
+    });
+  }
+
+  /* Floating numbers have to wait for the re-render that replaces the card. */
+  let pending = null;
+  const baseRender = render;
+  render = function(){
+    baseRender();
+    if(pending){ floatText(pending.id, pending.text, pending.kind); pending = null; }
+  };
+
+  /* ---------------- drag to reorder ---------------- */
+  let drag = null;
+
+  function onPointerDown(e, card){
+    if(e.pointerType === "mouse" && e.button !== 0) return;
+    if(e.target.closest("input,button,.hp,.init-badge,.conds")) return;
+    drag = {
+      card, id:card.dataset.id,
+      x0:e.clientX, y0:e.clientY,
+      sx:e.clientX, sy:e.clientY,
+      moved:false
+    };
+    card.setPointerCapture && card.setPointerCapture(e.pointerId);
+    document.addEventListener("pointermove", onPointerMove);
+    document.addEventListener("pointerup", onPointerUp);
+  }
+
+  function onPointerMove(e){
+    if(!drag) return;
+    const dx = e.clientX - drag.x0, dy = e.clientY - drag.y0;
+    if(!drag.moved && Math.hypot(e.clientX - drag.sx, e.clientY - drag.sy) < 6) return;
+    if(!drag.moved){
+      drag.moved = true;
+      drag.card.classList.add("dragging");
+      document.body.style.cursor = "grabbing";
+    }
+    drag.card.style.transform = "translate(" + dx + "px," + dy + "px)";
+
+    const under = document.elementFromPoint(e.clientX, e.clientY);
+    const over = under && under.closest(".card");
+    if(!over || over === drag.card) return;
+
+    const r = over.getBoundingClientRect();
+    const after = (e.clientX - r.left) > r.width / 2;
+    const before = drag.card.getBoundingClientRect();
+    track.insertBefore(drag.card, after ? over.nextSibling : over);
+    const now = drag.card.getBoundingClientRect();
+    // re-baseline so the sprite does not jump when the row reflows
+    drag.x0 += now.left - before.left;
+    drag.y0 += now.top - before.top;
+    drag.card.style.transform =
+      "translate(" + (e.clientX - drag.x0) + "px," + (e.clientY - drag.y0) + "px)";
+  }
+
+  function onPointerUp(){
+    document.removeEventListener("pointermove", onPointerMove);
+    document.removeEventListener("pointerup", onPointerUp);
+    if(!drag) return;
+    const d = drag; drag = null;
+    document.body.style.cursor = "";
+    d.card.style.transform = "";
+    d.card.classList.remove("dragging");
+
+    if(!d.moved){                                 // a tap jumps the turn
+      const c = state.combatants.find(o => o.id === d.id);
+      if(c && state.round > 0 && c.id !== state.activeId){
+        state.activeId = c.id;
+        logEvent("turn", "Jumped to " + c.name + "'s turn");
+        render();
+      }
+      return;
+    }
+
+    const order = Array.from(track.querySelectorAll(".card")).map(el => el.dataset.id);
+    const byId = {};
+    state.combatants.forEach(c => byId[c.id] = c);
+    const next = order.map(id => byId[id]).filter(Boolean);
+    if(next.length === state.combatants.length){
+      const moved = byId[d.id];
+      state.combatants = next;
+      logEvent("order", moved.name + " moved to slot " + (order.indexOf(d.id) + 1));
+    }
+    render();
+  }
+
+  /* ---------------- turns ---------------- */
+  function tickConditions(c){
+    if(!c) return;
+    c.conds = c.conds.filter(x => {
+      if(x.n > 0){
+        x.n--;
+        if(x.n === 0){
+          logEvent("cond", c.name + "'s " + COND[x.k].n + " wore off");
+          return false;
+        }
+      }
+      return true;
+    });
+  }
+
+  function step(dir){
+    const list = state.combatants;
+    if(!list.length) return;
+
+    if(dir > 0 && state.round === 0){
+      state.round = 1;
+      state.activeId = list[0].id;
+      logEvent("system", "Battle begins — " + list[0].name + " acts first");
+      render();
+      return;
+    }
+
+    let i = list.findIndex(c => c.id === state.activeId);
+    if(i < 0) i = 0;
+    else{
+      if(dir > 0) tickConditions(list[i]);
+      i += dir;
+      if(i >= list.length){ i = 0; state.round++; }
+      if(i < 0){
+        if(state.round <= 1){
+          state.round = 0; state.activeId = null;
+          logEvent("system", "Battle reset to round 0");
+          render();
+          return;
+        }
+        i = list.length - 1; state.round--;
+      }
+    }
+    state.activeId = list[i].id;
+    logEvent("turn", dir > 0 ? list[i].name + "'s turn"
+                             : "Stepped back to " + list[i].name + "'s turn");
+    render();
+  }
+
+  /* ---------------- adding ---------------- */
+  function insertByInit(c){
+    const at = state.combatants.findIndex(o => o.init < c.init);
+    if(at < 0) state.combatants.push(c);
+    else state.combatants.splice(at, 0, c);
+  }
+
+  function addCombatants(){
+    const base = $("#f-name").value.trim();
+    if(!base){ $("#f-name").focus(); return; }
+
+    const type  = $("#f-type").value;
+    const mod   = parseInt($("#f-mod").value, 10) || 0;
+    const ac    = parseInt($("#f-ac").value, 10) || 0;
+    const maxHp = parseInt($("#f-hp").value, 10) || 0;
+    const qty   = clamp(parseInt($("#f-qty").value, 10) || 1, 1, 12);
+    const fixedRaw = $("#f-init").value.trim();
+    const fixed = fixedRaw === "" ? null : parseInt(fixedRaw, 10);
+    const rolled = [];
+
+    for(let i = 0; i < qty; i++){
+      const c = {
+        id:uid(),
+        name: qty > 1 ? base + " " + (i + 1) : base,
+        type,
+        icon: pendingIcon || DEFAULT_ICON[type],
+        init: (fixed !== null && !isNaN(fixed)) ? fixed : d20() + mod,
+        mod, ac, hp:maxHp, maxHp, tempHp:0, notes:"", conds:[]
+      };
+      insertByInit(c);
+      rolled.push(c.init);
+    }
+    logEvent("roster", qty > 1
+      ? "Added " + qty + " × " + base + " (initiative " + rolled.join(", ") + ")"
+      : "Added " + base + " (initiative " + rolled[0] + ")");
+
+    $("#f-name").value = ""; $("#f-init").value = ""; $("#f-qty").value = 1;
+    pendingIcon = null;
+    syncIconBtn();
+    render();
+    $("#f-name").focus();
+  }
+
+  /* ---------------- condition menu ---------------- */
+  let condTarget = null;
+
+  function placePop(pop, anchor){
+    pop.classList.remove("hidden");
+    const r = anchor.getBoundingClientRect();
+    const w = pop.offsetWidth, h = pop.offsetHeight;
+    let left = r.left + window.scrollX;
+    let top  = r.bottom + window.scrollY + 8;
+    if(left + w > window.scrollX + document.documentElement.clientWidth - 12)
+      left = window.scrollX + document.documentElement.clientWidth - w - 12;
+    if(left < window.scrollX + 12) left = window.scrollX + 12;
+    if(r.bottom + h > window.innerHeight - 12) top = r.top + window.scrollY - h - 8;
+    pop.style.left = left + "px";
+    pop.style.top  = Math.max(window.scrollY + 12, top) + "px";
+  }
+
+  function openCondMenu(c, anchor){
+    condTarget = c;
+    $("#cond-head").textContent = c.name.toUpperCase();
+    const host = $("#cond-grid");
+    host.innerHTML = "";
+    CONDITIONS.forEach(cd => {
+      const has = c.conds.find(x => x.k === cd.k);
+      const row = document.createElement("div");
+      row.className = "cond-row" + (has ? " on" : "");
+
+      const tog = document.createElement("button");
+      tog.className = "tog";
+      tog.appendChild(sprite(cd.e, 18));
+      const t = document.createElement("span");
+      t.textContent = cd.n;
+      tog.appendChild(t);
+      tog.addEventListener("click", e => {
+        e.stopPropagation();
+        if(has){
+          c.conds = c.conds.filter(x => x.k !== cd.k);
+          logEvent("cond", c.name + " is no longer " + cd.n);
+        } else {
+          c.conds.push({k:cd.k, n:0});
+          logEvent("cond", c.name + " is now " + cd.n);
+        }
+        render();
+        openCondMenu(c, track.querySelector('.card[data-id="' + c.id + '"] .conds') || anchor);
+      });
+      row.appendChild(tog);
+
+      const num = document.createElement("input");
+      num.type = "number";
+      num.min = "0";
+      num.placeholder = "∞";
+      num.value = has && has.n > 0 ? has.n : "";
+      num.title = "Rounds remaining — blank lasts until removed";
+      num.addEventListener("click", e => e.stopPropagation());
+      num.addEventListener("change", () => {
+        const n = Math.max(0, parseInt(num.value, 10) || 0);
+        let entry = c.conds.find(x => x.k === cd.k);
+        if(!entry){ entry = {k:cd.k, n:0}; c.conds.push(entry); }
+        entry.n = n;
+        logEvent("cond", c.name + "'s " + cd.n + (n > 0 ? " set to " + n + " rounds" : " has no time limit"));
+        render();
+      });
+      row.appendChild(num);
+      host.appendChild(row);
+    });
+    placePop($("#cond-menu"), anchor);
+  }
+
+  /* ---------------- sprite picker ---------------- */
+  function syncIconBtn(){
+    const btn = $("#f-icon");
+    btn.innerHTML = "";
+    btn.appendChild(sprite(pendingIcon || DEFAULT_ICON[$("#f-type").value], 22));
+  }
+
+  // Two forms share the picker, so the chosen sprite goes wherever this points.
+  let pickInto = v => { pendingIcon = v; syncIconBtn(); };
+
+  (function buildPicker(){
+    const grid = $("#sprite-grid");
+    EMOJI.forEach(em => {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.title = em;
+      b.appendChild(sprite(em, 22));
+      b.addEventListener("click", e => {
+        e.stopPropagation();
+        pickInto(em);
+        $("#picker").classList.add("hidden");
+      });
+      grid.appendChild(b);
+    });
+  })();
+
+  $("#f-icon").addEventListener("click", e => {
+    e.stopPropagation();
+    const p = $("#picker");
+    if(!p.classList.contains("hidden")){ p.classList.add("hidden"); return; }
+    pickInto = v => { pendingIcon = v; syncIconBtn(); };
+    placePop(p, $("#f-icon"));
+  });
+  $("#f-type").addEventListener("change", () => { if(!pendingIcon) syncIconBtn(); });
+
+  document.addEventListener("click", () => {
+    $("#picker").classList.add("hidden");
+    $("#cond-menu").classList.add("hidden");
+  });
+  $("#picker").addEventListener("click", e => e.stopPropagation());
+  $("#cond-menu").addEventListener("click", e => e.stopPropagation());
+
+  /* ---------------- controls ---------------- */
+  $("#btn-next").addEventListener("click", e => { e.currentTarget.blur(); step(1); });
+  $("#btn-prev").addEventListener("click", e => { e.currentTarget.blur(); step(-1); });
+  $("#btn-add").addEventListener("click", addCombatants);
+
+  $("#btn-roll").addEventListener("click", () => {
+    const mod = parseInt($("#f-mod").value, 10) || 0;
+    $("#f-init").value = d20() + mod;
+  });
+
+  $("#btn-sort").addEventListener("click", () => {
+    state.combatants = state.combatants
+      .map((c, i) => ({c, i}))
+      .sort((a, b) => (b.c.init - a.c.init) || (a.i - b.i))
+      .map(o => o.c);
+    logEvent("order", "Sorted by initiative");
+    render();
+  });
+
+  $("#btn-reroll").addEventListener("click", () => {
+    state.combatants.forEach(c => { c.init = d20() + (c.mod || 0); });
+    state.combatants.sort((a, b) => b.init - a.init);
+    logEvent("order", "Everyone rerolled initiative");
+    render();
+  });
+
+  $("#btn-newfight").addEventListener("click", () => {
+    state.round = 0;
+    state.activeId = null;
+    state.combatants.forEach(c => {
+      c.hp = c.maxHp; c.tempHp = 0; c.conds = [];
+      c.init = d20() + (c.mod || 0);
+    });
+    state.combatants.sort((a, b) => b.init - a.init);
+    state.log = [];
+    logEvent("system", "New battle — everyone rerolled and healed");
+    render();
+  });
+
+  $("#log-clear").addEventListener("click", () => { state.log = []; render(); });
+
+  [$("#f-name"), $("#f-init"), $("#f-mod"), $("#f-ac"), $("#f-hp"), $("#f-qty")]
+    .forEach(inp => inp.addEventListener("keydown", e => {
+      if(e.key === "Enter") addCombatants();
+    }));
+
+  document.addEventListener("keydown", e => {
+    if(!document.body.classList.contains("booted")) return;
+    if(document.body.dataset.screen !== "track") return;
+    if(!$("#ask").classList.contains("hidden")) return;
+    const t = e.target;
+    if(t && (t.tagName === "INPUT" || t.tagName === "SELECT" || t.tagName === "TEXTAREA")) return;
+    if(e.key === " " || e.key === "ArrowRight"){ e.preventDefault(); step(1); }
+    if(e.key === "ArrowLeft"){ e.preventDefault(); step(-1); }
+  });
+
+  /* ---------------- boot ---------------- */
+  (function boot(){
+    const host = $("#boot-sprite");
+    host.replaceWith(sprite("🐉", 20));
+    document.querySelector("#boot canvas").id = "boot-sprite";
+    $("#menu-sprite").replaceWith(sprite("🐉", 20));
+    let done = false;
+    const finish = () => {
+      if(done) return;
+      done = true;
+      document.body.classList.add("booted");
+      setTimeout(() => { const b = $("#boot"); if(b) b.remove(); }, 600);
+    };
+    setTimeout(finish, 1900);
+    $("#boot").addEventListener("click", finish);
+    $("#boot").addEventListener("touchstart", finish, {passive:true});
+    document.addEventListener("keydown", finish);
+  })();
+
+
+  /* ============================================================
+     Campaigns. Kept in their own key rather than inside state, the
+     way the app does it: a party has no business being re-serialised
+     on every hit point, and undo must not rewind it.
+     ============================================================ */
+  const CAMP_KEY = "ri-8bit-campaigns-v1";
+  const plural = (n, word) => n + " " + word + (n === 1 ? "" : "s");
+
+  function normChar(ch){
+    if(!ch || typeof ch.name !== "string" || !ch.name.trim()) return null;
+    const type = (ch.type === "ally" || ch.type === "enemy") ? ch.type : "player";
+    return {
+      id:     (typeof ch.id === "string" && ch.id) ? ch.id : uid(),
+      name:   ch.name.trim().slice(0, 40),
+      player: typeof ch.player === "string" ? ch.player.trim().slice(0, 40) : "",
+      cls:    typeof ch.cls    === "string" ? ch.cls.trim().slice(0, 30)    : "",
+      level:  clamp(parseInt(ch.level, 10) || 0, 0, 20),
+      type,
+      icon:   (typeof ch.icon === "string" && ch.icon) ? ch.icon : DEFAULT_ICON[type],
+      mod:    parseInt(ch.mod, 10) || 0,
+      ac:     Math.max(0, parseInt(ch.ac, 10)    || 0),
+      maxHp:  Math.max(0, parseInt(ch.maxHp, 10) || 0),
+      notes:  typeof ch.notes === "string" ? ch.notes.slice(0, 400) : ""
+    };
+  }
+
+  function normCamps(o){
+    const src = (o && Array.isArray(o.list)) ? o.list : (Array.isArray(o) ? o : []);
+    const out = {v:1, list:[]};
+    src.forEach(c => {
+      if(!c || typeof c.name !== "string") return;
+      out.list.push({
+        id:        (typeof c.id === "string" && c.id) ? c.id : uid(),
+        name:      c.name.trim().slice(0, 60) || "Untitled campaign",
+        made:      parseInt(c.made, 10) || Date.now(),
+        chars:     (Array.isArray(c.chars)     ? c.chars     : []).map(normChar).filter(Boolean),
+        creatures: (Array.isArray(c.creatures) ? c.creatures : []).map(normChar).filter(Boolean),
+        battle:    c.battle || null
+      });
+    });
+    return out;
+  }
+
+  function demoCampaign(){
+    const ch = (name, player, cls, level, type, icon, mod, ac, maxHp, notes) =>
+      ({id:"d-" + name.toLowerCase(), name, player, cls, level, type, icon, mod, ac, maxHp, notes:notes || ""});
+    return normCamps({list:[{
+      id:"demo-ember-vale",
+      name:"Curse of the Ember Vale",
+      made:Date.now(),
+      chars:[
+        ch("Thalia", "Sam", "Wizard",    6, "player", "\u{1F9D9}", 3, 15, 38, "Holding a wall of fire"),
+        ch("Bram",   "Ada", "Paladin",   5, "player", "\u{1F6E1}", 1, 20, 52, ""),
+        ch("Grumm",  "Jo",  "Barbarian", 6, "player", "\u{1FA93}", 0, 14, 45, "Reckless below half HP"),
+        ch("Nyx",    "",    "Familiar",  1, "ally",   "\u{1F408}", 4, 12,  5, "Thalia's familiar")
+      ],
+      creatures:[
+        ch("Dire Wolf", "", "Beast", 0, "enemy", "\u{1F43A}", 2, 13, 11, "Pack tactics"),
+        ch("Kelda",     "", "Ogre",  0, "enemy", "\u{1F9CC}", 1, 16, 60, "Reckless attacks")
+      ],
+      battle:null
+    }]});
+  }
+
+  function loadCampaigns(){
+    try{
+      const raw = localStorage.getItem(CAMP_KEY);
+      if(raw) return normCamps(JSON.parse(raw));
+    }catch(e){ /* blocked or corrupt storage — fall through to the demo */ }
+    return demoCampaign();
+  }
+
+  /* Returns false when the write failed, so a party someone just typed is
+     never lost silently. */
+  function saveCampaigns(){
+    try{ localStorage.setItem(CAMP_KEY, JSON.stringify(campaigns)); return true; }
+    catch(e){ return false; }
+  }
+
+  let campaigns = loadCampaigns();
+  const findCampaign = id => campaigns.list.find(c => c.id === id) || null;
+
+  function charLine(ch){
+    const bits = [];
+    if(ch.player) bits.push(ch.player);
+    if(ch.cls)    bits.push(ch.cls + (ch.level ? " " + ch.level : ""));
+    else if(ch.level) bits.push("Level " + ch.level);
+    if(ch.ac)     bits.push("AC " + ch.ac);
+    if(ch.maxHp)  bits.push(ch.maxHp + " HP");
+    bits.push("init " + (ch.mod >= 0 ? "+" : "") + ch.mod);
+    return bits.join(" \u00b7 ");
+  }
+
+  function campLine(c){
+    const bits = [plural(c.chars.length, "character")];
+    if(c.battle && c.battle.combatants.length)
+      bits.push(c.battle.round ? "battle in round " + c.battle.round : "battle set up");
+    bits.push(new Date(c.made).toLocaleDateString());
+    return bits.join(" \u00b7 ");
+  }
+
+  /* A character is a template; a combatant is one instance of it in one fight.
+     Everything per-fight is made here rather than stored. */
+  function toCombatant(ch, init){
+    return {
+      id:uid(), charId:ch.id,
+      name:ch.name, type:ch.type, icon:ch.icon || DEFAULT_ICON[ch.type],
+      init:parseInt(init, 10) || 0,
+      mod:ch.mod || 0, ac:ch.ac || 0,
+      hp:ch.maxHp || 0, maxHp:ch.maxHp || 0, tempHp:0,
+      notes:ch.notes || "", conds:[]
+    };
+  }
+
+  const blankState = () => ({round:0, activeId:null, campaignId:null, combatants:[], log:[]});
+
+  /* ---------------- confirmation ---------------- */
+  let askCb = null;
+  function askConfirm(title, message, yesLabel, cb){
+    $("#ask-title").textContent = title.toUpperCase();
+    $("#ask-say").textContent = message;
+    $("#ask-yes").textContent = yesLabel.toUpperCase();
+    askCb = cb;
+    $("#ask").classList.remove("hidden");
+  }
+  function closeAsk(){ $("#ask").classList.add("hidden"); askCb = null; }
+  $("#ask-yes").addEventListener("click", () => { const cb = askCb; closeAsk(); if(cb) cb(); });
+  $("#ask-no").addEventListener("click", closeAsk);
+  $("#ask").addEventListener("click", e => { if(e.target === $("#ask")) closeAsk(); });
+
+  /* ---------------- screen routing ---------------- */
+  const onTrack = () => document.body.dataset.screen === "track";
+
+  function showScreen(name){
+    if(document.activeElement && document.activeElement.blur) document.activeElement.blur();
+    $("#picker").classList.add("hidden");
+    $("#cond-menu").classList.add("hidden");
+    document.body.dataset.screen = name;
+    if(name === "menu")  paintMenu();
+    if(name === "chars") paintParty();
+    if(name === "load")  paintCamps();
+    if(name === "enc")   paintEnc();
+    if(name === "track") render();
+    window.scrollTo(0, 0);
+  }
+
+  /* Copies the live board onto its campaign, so leaving the tracker to look at
+     another campaign does not lose the fight. */
+  function stashBattle(){
+    if(!state.campaignId) return;
+    const camp = findCampaign(state.campaignId);
+    if(!camp) return;
+    camp.battle = JSON.parse(JSON.stringify(state));
+    saveCampaigns();
+  }
+
+  function prow(ch, extraClass){
+    const row = document.createElement("div");
+    row.className = "prow" + (extraClass ? " " + extraClass : "");
+    row.dataset.id = ch.id;
+    return row;
+  }
+  function whoBlock(ch){
+    const w = document.createElement("span");
+    w.className = "who";
+    const b = document.createElement("b");
+    b.textContent = ch.name;
+    const sm = document.createElement("small");
+    sm.textContent = charLine(ch);
+    w.appendChild(b); w.appendChild(sm);
+    return w;
+  }
+
+  /* ---------------- main menu ---------------- */
+  function paintMenu(){
+    const n = state.combatants.length;
+    const resume = $("#m-resume");
+    resume.hidden = !n;
+    if(n){
+      const camp = state.campaignId && findCampaign(state.campaignId);
+      const where = state.round ? "Round " + state.round : "Not started";
+      $("#m-resume-say").textContent =
+        where + " \u00b7 " + plural(n, "combatant") + (camp ? " \u00b7 " + camp.name : "");
+    }
+    const c = campaigns.list.length;
+    $("#m-load-say").textContent = c ? plural(c, "campaign") + " saved."
+                                     : "No campaigns saved yet.";
+    $("#m-load").disabled = !c;
+  }
+
+  /* ---------------- character creation ---------------- */
+  let ccChars = [], ccCampId = null, ccEditId = null, ccIcon = null, ccDirty = false;
+  const ccF = {
+    camp:$("#cc-camp"), name:$("#cc-name"), player:$("#cc-player"), cls:$("#cc-class"),
+    level:$("#cc-level"), type:$("#cc-type"), mod:$("#cc-mod"), ac:$("#cc-ac"),
+    hp:$("#cc-hp"), notes:$("#cc-notes"), icon:$("#cc-icon")
+  };
+
+  function ccOpen(campId){
+    const camp = campId ? findCampaign(campId) : null;
+    ccCampId = camp ? camp.id : null;
+    ccChars  = camp ? JSON.parse(JSON.stringify(camp.chars)) : [];
+    ccDirty  = false;
+    ccF.camp.value = camp ? camp.name : "";
+    $("#cc-title").textContent = camp ? camp.name.toUpperCase() : "NEW CAMPAIGN";
+    $("#cc-msg").textContent = "";
+    ccReset();
+    showScreen("chars");
+    (camp ? ccF.name : ccF.camp).focus();
+  }
+
+  function ccSyncIcon(){
+    ccF.icon.innerHTML = "";
+    ccF.icon.appendChild(sprite(ccIcon || DEFAULT_ICON[ccF.type.value], 22));
+  }
+
+  function ccReset(){
+    ccEditId = null; ccIcon = null;
+    ccF.name.value = ""; ccF.player.value = ""; ccF.cls.value = "";
+    ccF.level.value = ""; ccF.mod.value = 0; ccF.ac.value = "";
+    ccF.hp.value = ""; ccF.notes.value = "";
+    $("#cc-formhead").textContent = "ADD A CHARACTER";
+    $("#cc-add").textContent = "+ ADD";
+    $("#cc-cancel").hidden = true;
+    ccSyncIcon();
+    paintParty();
+  }
+
+  function ccCommit(){
+    const ch = normChar({
+      id: ccEditId || undefined,
+      name:ccF.name.value, player:ccF.player.value, cls:ccF.cls.value,
+      level:ccF.level.value, type:ccF.type.value, icon:ccIcon,
+      mod:ccF.mod.value, ac:ccF.ac.value, maxHp:ccF.hp.value, notes:ccF.notes.value
+    });
+    if(!ch){ ccF.name.focus(); return; }
+    const at = ccEditId ? ccChars.findIndex(x => x.id === ccEditId) : -1;
+    if(at >= 0) ccChars[at] = ch; else ccChars.push(ch);
+    ccDirty = true;
+    ccReset();
+    ccF.name.focus();
+  }
+
+  function ccEdit(id){
+    const ch = ccChars.find(x => x.id === id);
+    if(!ch) return;
+    ccEditId = ch.id; ccIcon = ch.icon;
+    ccF.name.value = ch.name; ccF.player.value = ch.player; ccF.cls.value = ch.cls;
+    ccF.level.value = ch.level || ""; ccF.type.value = ch.type; ccF.mod.value = ch.mod;
+    ccF.ac.value = ch.ac || ""; ccF.hp.value = ch.maxHp || ""; ccF.notes.value = ch.notes;
+    $("#cc-formhead").textContent = "EDIT " + ch.name.toUpperCase();
+    $("#cc-add").textContent = "SAVE";
+    $("#cc-cancel").hidden = false;
+    ccSyncIcon();
+    paintParty();
+    ccF.name.focus();
+  }
+
+  function paintParty(){
+    const box = $("#cc-list");
+    $("#cc-count").textContent = ccChars.length;
+    box.innerHTML = "";
+    if(!ccChars.length){
+      box.innerHTML = '<div class="none">No one yet. Fill the form above and press Add.</div>';
+      return;
+    }
+    ccChars.forEach(ch => {
+      const row = prow(ch);
+      row.appendChild(sprite(ch.icon));
+      row.appendChild(whoBlock(ch));
+      const gap = document.createElement("div"); gap.className = "gap";
+      row.appendChild(gap);
+
+      const ed = document.createElement("button");
+      ed.className = "btn btn-tiny"; ed.textContent = "\u270E";
+      ed.setAttribute("aria-label", "Edit " + ch.name);
+      ed.addEventListener("click", () => ccEdit(ch.id));
+      row.appendChild(ed);
+
+      const del = document.createElement("button");
+      del.className = "btn btn-tiny"; del.textContent = "X";
+      del.setAttribute("aria-label", "Remove " + ch.name);
+      del.addEventListener("click", () => {
+        askConfirm("Remove character", "Remove " + ch.name + " from this campaign?", "Remove", () => {
+          ccChars = ccChars.filter(x => x.id !== ch.id);
+          ccDirty = true;
+          if(ccEditId === ch.id) ccReset(); else paintParty();
+        });
+      });
+      row.appendChild(del);
+      box.appendChild(row);
+    });
+  }
+
+  function ccSave(){
+    const name = ccF.camp.value.trim();
+    if(!name){ ccF.camp.focus(); return; }
+    if(!ccChars.length){
+      $("#cc-msg").textContent = "Add at least one character before saving.";
+      return;
+    }
+    let camp = ccCampId ? findCampaign(ccCampId) : null;
+    if(!camp){
+      camp = {id:uid(), name, made:Date.now(), chars:[], creatures:[], battle:null};
+      campaigns.list.push(camp);
+    }
+    camp.name = name.slice(0, 60);
+    camp.chars = ccChars;
+    if(!saveCampaigns()){
+      $("#cc-msg").textContent =
+        "There was no room to save this campaign. Remove an older campaign and try again.";
+      return;
+    }
+    $("#cc-msg").textContent = "";
+    ccCampId = camp.id;
+    ccDirty = false;
+    encOpen(camp.id);
+  }
+
+  function ccLeave(){
+    const go = () => { ccDirty = false; showScreen("menu"); };
+    if(ccDirty) askConfirm("Leave without saving",
+      "This campaign has changes that have not been saved yet.", "Discard changes", go);
+    else go();
+  }
+
+  /* ---------------- campaign list ---------------- */
+  function paintCamps(){
+    const box = $("#ld-list");
+    $("#ld-count").textContent = campaigns.list.length;
+    box.innerHTML = "";
+    if(!campaigns.list.length){
+      box.innerHTML = '<div class="none">No campaigns yet. Start one from the menu.</div>';
+      return;
+    }
+    campaigns.list.forEach(c => {
+      const row = document.createElement("div");
+      row.className = "prow";
+      const w = document.createElement("span");
+      w.className = "who";
+      const b = document.createElement("b"); b.textContent = c.name;
+      const sm = document.createElement("small"); sm.textContent = campLine(c);
+      w.appendChild(b); w.appendChild(sm);
+      row.appendChild(w);
+      const gap = document.createElement("div"); gap.className = "gap";
+      row.appendChild(gap);
+
+      const open = document.createElement("button");
+      open.className = "btn btn-tiny"; open.textContent = "OPEN";
+      open.addEventListener("click", () => encOpen(c.id));
+      row.appendChild(open);
+
+      const del = document.createElement("button");
+      del.className = "btn btn-tiny"; del.textContent = "X";
+      del.setAttribute("aria-label", "Delete " + c.name);
+      del.addEventListener("click", () => {
+        askConfirm("Delete campaign",
+          "This permanently deletes " + c.name + " and its characters.", "Delete", () => {
+            campaigns.list = campaigns.list.filter(x => x.id !== c.id);
+            if(state.campaignId === c.id) state.campaignId = null;
+            saveCampaigns();
+            paintCamps();
+          });
+      });
+      row.appendChild(del);
+      box.appendChild(row);
+    });
+  }
+
+  /* ---------------- encounter roster ---------------- */
+  let encCampId = null;
+
+  function encOpen(id){
+    const camp = findCampaign(id);
+    if(!camp) return;
+    encCampId = camp.id;
+    $("#enc-title").textContent = camp.name.toUpperCase();
+    showScreen("enc");
+  }
+
+  function paintEnc(){
+    const camp = findCampaign(encCampId);
+    if(!camp) return showScreen("load");
+
+    const box = $("#enc-list");
+    box.innerHTML = "";
+    if(!camp.chars.length)
+      box.innerHTML = '<div class="none">This campaign has no characters yet.</div>';
+
+    camp.chars.forEach(ch => {
+      const row = prow(ch, "enc-row");
+      // the label wraps only the tick and the name: if it wrapped the number box
+      // too, clicking into that box would toggle the tick off
+      const lab = document.createElement("label");
+      lab.className = "enc-who";
+      const tick = document.createElement("input");
+      tick.type = "checkbox"; tick.className = "tick"; tick.checked = true;
+      tick.addEventListener("change", encSync);
+      lab.appendChild(tick);
+      lab.appendChild(sprite(ch.icon));
+      lab.appendChild(whoBlock(ch));
+      row.appendChild(lab);
+
+      const init = document.createElement("input");
+      init.type = "number"; init.className = "enc-init";
+      init.placeholder = "\u2014";                 // blank is not allowed here
+      init.setAttribute("aria-label", ch.name + " initiative");
+      init.addEventListener("input", encSync);
+      row.appendChild(init);
+      box.appendChild(row);
+    });
+
+    const crtBox = $("#enc-crt");
+    $("#enc-crt-panel").hidden = !camp.creatures.length;
+    crtBox.innerHTML = "";
+    camp.creatures.forEach(ch => {
+      const row = prow(ch, "enc-row");
+      const lab = document.createElement("label");
+      lab.className = "enc-who";
+      const tick = document.createElement("input");
+      tick.type = "checkbox"; tick.className = "tick";
+      tick.addEventListener("change", encSync);
+      lab.appendChild(tick);
+      lab.appendChild(sprite(ch.icon));
+      lab.appendChild(whoBlock(ch));
+      row.appendChild(lab);
+
+      const qty = document.createElement("input");
+      qty.type = "number"; qty.className = "enc-init";
+      qty.value = 1; qty.min = 1; qty.max = 12;
+      qty.setAttribute("aria-label", ch.name + " count");
+      row.appendChild(qty);
+
+      const del = document.createElement("button");
+      del.className = "btn btn-tiny"; del.textContent = "X";
+      del.setAttribute("aria-label", "Forget " + ch.name);
+      del.addEventListener("click", () => {
+        askConfirm("Forget creature", "Remove " + ch.name + " from this campaign?", "Forget", () => {
+          camp.creatures = camp.creatures.filter(x => x.id !== ch.id);
+          saveCampaigns(); paintEnc();
+        });
+      });
+      row.appendChild(del);
+      crtBox.appendChild(row);
+    });
+
+    const hasBattle = !!(camp.battle && camp.battle.combatants.length);
+    $("#enc-resume").hidden = !hasBattle;
+    if(hasBattle)
+      $("#enc-resume").textContent =
+        "RESUME " + (camp.battle.round ? "ROUND " + camp.battle.round : "THIS BATTLE");
+    encSync();
+  }
+
+  const encRows = sel => Array.from($(sel).querySelectorAll(".enc-row"))
+    .filter(r => r.querySelector(".tick").checked);
+
+  /* Start stays disabled until every ticked player has a number. The DM is
+     reading rolls off the table, and a silently rolled value would be wrong
+     without looking wrong. Creatures roll their own, so they never block it. */
+  function encSync(){
+    const party = encRows("#enc-list");
+    $("#enc-count").textContent = party.length;
+    Array.from($("#enc-list").querySelectorAll(".enc-row")).forEach(r => {
+      r.classList.toggle("off", !r.querySelector(".tick").checked);
+    });
+    const crt = encRows("#enc-crt");
+    const ready = (party.length + crt.length) > 0 &&
+                  party.every(r => r.querySelector(".enc-init").value.trim() !== "");
+    $("#enc-go").disabled = !ready;
+  }
+
+  function startEncounter(){
+    const camp = findCampaign(encCampId);
+    if(!camp) return;
+    const party = encRows("#enc-list"), crt = encRows("#enc-crt");
+
+    const go = () => {
+      state = blankState();
+      state.campaignId = camp.id;
+      const names = [];
+      party.forEach(r => {
+        const ch = camp.chars.find(x => x.id === r.dataset.id);
+        if(!ch) return;
+        const c = toCombatant(ch, r.querySelector(".enc-init").value);
+        insertByInit(c);
+        names.push(ch.name + " " + c.init);
+      });
+      crt.forEach(r => {
+        const ch = camp.creatures.find(x => x.id === r.dataset.id);
+        if(!ch) return;
+        const n = clamp(parseInt(r.querySelector(".enc-init").value, 10) || 1, 1, 12);
+        for(let i = 0; i < n; i++){
+          const c = toCombatant(ch, d20() + (ch.mod || 0));
+          if(n > 1) c.name = ch.name + " " + (i + 1);
+          insertByInit(c);
+        }
+      });
+      logEvent("system", camp.name + " \u2014 encounter begins");
+      if(names.length) logEvent("roster", "Party joined: " + names.join(", "));
+      showScreen("track");
+    };
+
+    if(state.combatants.length)
+      askConfirm("Start encounter",
+        "This clears the battle currently on the tracker and puts the chosen party on the board.",
+        "Start encounter", go);
+    else go();
+  }
+
+  function encResume(){
+    const camp = findCampaign(encCampId);
+    if(!camp || !camp.battle) return;
+    state = JSON.parse(JSON.stringify(camp.battle));
+    state.campaignId = camp.id;
+    showScreen("track");
+  }
+
+  /* ---------------- wiring ---------------- */
+  $("#m-resume").addEventListener("click", () => showScreen("track"));
+  $("#m-new").addEventListener("click", () => ccOpen(null));
+  $("#m-load").addEventListener("click", () => showScreen("load"));
+  $("#m-quick").addEventListener("click", () => {
+    const go = () => { state = blankState(); showScreen("track"); };
+    if(state.combatants.length)
+      askConfirm("Quick play",
+        "This clears the battle currently on the tracker. Nothing is kept in a campaign.",
+        "Clear and play", go);
+    else go();
+  });
+  $("#m-demo").addEventListener("click", () => {
+    askConfirm("Reload the demo",
+      "This restores the sample fight and the sample campaign, replacing anything you have entered.",
+      "Reload", () => {
+        try{ localStorage.removeItem(CAMP_KEY); }catch(e){}
+        campaigns = demoCampaign();
+        state = demoState();
+        showScreen("menu");
+      });
+  });
+
+  $("#cc-add").addEventListener("click", ccCommit);
+  $("#cc-cancel").addEventListener("click", ccReset);
+  $("#cc-back").addEventListener("click", ccLeave);
+  $("#cc-save").addEventListener("click", ccSave);
+  $("#cc-type").addEventListener("change", () => { if(!ccIcon) ccSyncIcon(); });
+  $("#cc-icon").addEventListener("click", e => {
+    e.stopPropagation();
+    const p = $("#picker");
+    if(!p.classList.contains("hidden")){ p.classList.add("hidden"); return; }
+    pickInto = v => { ccIcon = v; ccSyncIcon(); };
+    placePop(p, $("#cc-icon"));
+  });
+  [ccF.camp, ccF.name, ccF.player, ccF.cls, ccF.level, ccF.mod, ccF.ac, ccF.hp]
+    .forEach(inp => inp.addEventListener("keydown", e => {
+      if(e.key === "Enter"){ e.preventDefault(); ccCommit(); }
+    }));
+
+  $("#ld-back").addEventListener("click", () => showScreen("menu"));
+
+  $("#enc-back").addEventListener("click", () => showScreen("menu"));
+  $("#enc-edit").addEventListener("click", () => ccOpen(encCampId));
+  $("#enc-go").addEventListener("click", startEncounter);
+  $("#enc-resume").addEventListener("click", encResume);
+  $("#enc-all").addEventListener("click", () => {
+    $("#enc-list").querySelectorAll(".tick").forEach(t => { t.checked = true; });
+    encSync();
+  });
+  $("#enc-none").addEventListener("click", () => {
+    $("#enc-list").querySelectorAll(".tick").forEach(t => { t.checked = false; });
+    encSync();
+  });
+
+  $("#btn-menu").addEventListener("click", () => { stashBattle(); showScreen("menu"); });
+
+  /* Keeping a creature is on the toolbar rather than in an edit dialog, which
+     this prototype does not have. It saves whoever is up. */
+  $("#btn-keep").addEventListener("click", () => {
+    const camp = state.campaignId && findCampaign(state.campaignId);
+    const c = state.combatants.find(o => o.id === state.activeId);
+    if(!camp || !c) return;
+    const ch = normChar({name:c.name.replace(/\s+\d+$/, ""), type:c.type, icon:c.icon,
+                         mod:c.mod, ac:c.ac, maxHp:c.maxHp, notes:c.notes});
+    if(!ch) return;
+    if(camp.creatures.some(x => x.name.toLowerCase() === ch.name.toLowerCase())){
+      logEvent("roster", ch.name + " is already kept in " + camp.name);
+    } else {
+      camp.creatures.push(ch);
+      saveCampaigns();
+      logEvent("roster", ch.name + " kept in " + camp.name);
+    }
+    render();
+  });
+
+  syncIconBtn();
+  showScreen("menu");
+})();
+</script>

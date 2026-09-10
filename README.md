@@ -77,6 +77,7 @@ Note that each device keeps its own battle — a fight set up on a laptop won't 
 | `resources/` | The two source images every launcher and store size is generated from. |
 | `web/` | Manifest, service worker and icons that make `www/` installable from a browser. |
 | `android/` | The native Android project, committed so an update builds on what shipped. |
+| `prototypes/` | Visual studies of the interface. Nothing here is built, packaged or deployed. |
 
 ## Building the mobile app
 
