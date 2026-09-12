@@ -77,6 +77,7 @@ Note that each device keeps its own battle — a fight set up on a laptop won't 
 | `resources/` | The two source images every launcher and store size is generated from. |
 | `web/` | Manifest, service worker and icons that make `www/` installable from a browser. |
 | `android/` | The native Android project, committed so an update builds on what shipped. |
+| `ios/` | The native Xcode project. Created on a Mac, then committed, like `android/`. |
 | `prototypes/` | Visual studies of the interface. Nothing here is built, packaged or deployed. |
 
 ## Building the mobile app
@@ -174,7 +175,52 @@ Then Run to sideload onto a connected phone, or Build ▸ Generate Signed Bundle
 project is already at version `1.0.0`, build `1`, with the app name **Roll Initiative** and every
 launcher and splash size generated from `resources/`.
 
-The iOS project is not created yet, because `npm run add:ios` only runs on macOS.
+**On an iPhone or iPad.** The `ios/` folder does not exist yet. It has to be created on a Mac,
+because the step that makes it runs CocoaPods and Xcode, neither of which exists on Windows. Once it
+is created, commit it, for the same reason `android/` is committed.
+
+Putting the app on your own device needs no paid membership. A free Apple ID signs a build that runs
+for **seven days**, after which the app refuses to open until you run it from Xcode again. That is
+the right way to look at it on a phone. The $99-a-year Apple Developer Program only becomes necessary
+for TestFlight, for the App Store, and for installs that do not expire — enrol when you get there,
+because approval takes a day or two as an individual and longer as a company, which also needs a
+D-U-N-S number.
+
+Install on the Mac first:
+
+- **Xcode**, from the Mac App Store. It is a large download, so start it before anything else.
+- **Command Line Tools** — `xcode-select --install`.
+- **CocoaPods** — `sudo gem install cocoapods`, or `brew install cocoapods` if you use Homebrew.
+- **Node 20 or newer**, matching what the Pages workflow builds with.
+
+Open Xcode once and let it finish installing components, then agree to the licence with
+`sudo xcodebuild -license accept`. Now, in a clone of this repository:
+
+```sh
+npm install
+npm run add:ios                  # creates ios/, runs pod install
+npx @capacitor/assets generate --ios   # icons and splash from resources/
+npm run open:ios                 # rebuilds www/ and opens Xcode
+```
+
+In Xcode, on the **App** target:
+
+1. **Signing & Capabilities** — tick *Automatically manage signing*, then add your Apple ID under
+   Xcode ▸ Settings ▸ Accounts and pick it as the Team. Leave the bundle identifier at
+   `com.rollinitiative.app`, which matches `capacitor.config.json` and cannot change after a first
+   App Store submission.
+2. **General ▸ Supported Destinations** — keep both *iPhone* and *iPad*. The tracker's two-column
+   layout already suits a tablet propped on the table, and dropping iPad later is easier than adding
+   it after a release.
+3. Plug the phone in, trust the Mac when it asks, pick it as the run destination and press Run.
+4. The first launch fails with an untrusted-developer error. On the phone, go to Settings ▸ General ▸
+   VPN & Device Management, tap your Apple ID and trust it, then launch the app again.
+
+After any change to `index.html`, run `npm run sync` to push it into the iOS project, then Run again.
+
+One thing to know before this goes further than your own phone: state lives in `localStorage`, and
+iOS clears WKWebView storage under pressure. Moving it to `@capacitor/preferences` matters more on
+iOS than on Android, and it is the first item in the list below.
 
 ### Still to do before a store submission
 
