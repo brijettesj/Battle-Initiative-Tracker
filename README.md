@@ -144,7 +144,7 @@ the app bundle itself, so on iOS a new icon always means a new version going thr
 **In a browser**, on any phone at the table, no install and no accounts: serve the folder and open it,
 or share the published link. Served over HTTPS from a real host, a floating **Install** button appears
 and adds it to the home screen, after which it runs offline. Push to `main` deploys `www/` to GitHub
-Pages once Pages is switched on under Settings ▸ Pages ▸ Source ▸ GitHub Actions.
+Pages, which is switched on and serving at <https://brijettesj.github.io/Battle-Initiative-Tracker/>.
 
 ```sh
 npm run build
@@ -226,7 +226,9 @@ iOS than on Android, and it is the first item in the list below.
 
 - **Storage.** State currently lives in `localStorage`, which a webview can clear under storage
   pressure. Move it to `@capacitor/preferences` so a campaign roster cannot vanish.
-- **A privacy policy at a public URL.** Both stores require one even though this app collects nothing.
+- ~~**A privacy policy at a public URL.**~~ Done. `privacy.html` ships in `www/`, so it is served at
+  <https://brijettesj.github.io/Battle-Initiative-Tracker/privacy.html>. That is the URL to paste into
+  both store listings.
 - **Store screenshots**, taken on a device or simulator rather than a desktop browser.
 
 ## Licences and attribution

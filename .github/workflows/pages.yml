@@ -1,8 +1,14 @@
 # Publishes www/ to GitHub Pages on every push to main.
 #
-# Inert until Pages is switched on for the repository: Settings, then Pages,
-# then set Source to "GitHub Actions". Until then this workflow simply never
-# has anywhere to deploy to.
+# Pages is switched on for this repository with its source set to GitHub
+# Actions, and the site is at https://brijettesj.github.io/Battle-Initiative-Tracker/
+#
+# It was not always. Before it was enabled this workflow did not sit quietly:
+# configure-pages asks the API for the Pages site, gets a 404, and fails the
+# job, so every push to main sent a failure notification. If Pages is ever
+# turned off again, expect the same. Either turn it back on or give this
+# workflow a `workflow_dispatch`-only trigger; there is no state in which it
+# both runs and does nothing.
 #
 # The install button in the app only appears on a real hosted origin, because
 # browsers require a manifest and a service worker served as actual files over
