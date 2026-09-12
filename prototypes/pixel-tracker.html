@@ -1,6 +1,10 @@
 <title>Roll Initiative 8-Bit</title>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap">
+<!-- Separate requests on purpose: one bad family name would 400 the whole
+     combined stylesheet and take the others down with it. -->
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Jacquarda+Bastarda+9&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Jacquard+12&display=swap">
 <style>
 /* ============================================================
    Roll Initiative — 8-bit prototype
@@ -31,6 +35,9 @@
   --px:4px;            /* one "pixel" */
   --ui:"Press Start 2P","Courier New",monospace;
   --crt:"VT323","Courier New",monospace;
+  /* Pixelated blackletter for the display line. Press Start 2P is the fallback
+     rather than a serif, so a failed font request still lands on a pixel face. */
+  --black:"Jacquarda Bastarda 9","Jacquard 12","Press Start 2P",monospace;
 }
 
 *{box-sizing:border-box}
@@ -62,6 +69,24 @@ img,canvas{max-width:100%;image-rendering:pixelated}
   position:fixed;inset:0;z-index:59;pointer-events:none;
   background:radial-gradient(120% 90% at 50% 0%, rgba(161,29,29,.16) 0%, rgba(0,0,0,0) 55%),
              radial-gradient(140% 120% at 50% 50%, rgba(0,0,0,0) 55%, rgba(0,0,0,.6) 100%);
+}
+
+/* ---------- the lobby backdrop ----------
+   A stone wall painted once and held well back: greyscale, low opacity, and a
+   radial fade that keeps the middle darkest so the banners stay the subject. */
+#dungeon{position:fixed;inset:0;z-index:-1;display:none;overflow:hidden}
+body[data-screen="menu"] #dungeon{display:block}
+#dungeon canvas{
+  width:100%;height:100%;object-fit:cover;display:block;
+  opacity:.34;filter:grayscale(1) contrast(.85);
+}
+#dungeon .fade{
+  position:absolute;inset:0;
+  background:radial-gradient(ellipse 74% 58% at 50% 46%,
+    rgba(13,11,16,.97) 0%,
+    rgba(13,11,16,.90) 34%,
+    rgba(13,11,16,.60) 68%,
+    rgba(13,11,16,.22) 100%);
 }
 
 /* ---------- the pixel frame ----------
@@ -97,17 +122,24 @@ img,canvas{max-width:100%;image-rendering:pixelated}
   margin-bottom:26px;
 }
 .wordmark{
-  font-family:var(--ui);
-  font-size:19px;line-height:1.5;
+  font-family:var(--black);
+  font-size:clamp(26px, 7vw, 40px);line-height:1;
   color:var(--flame);
   margin:0;
-  text-shadow:var(--px) var(--px) 0 var(--blood), calc(var(--px)*2) calc(var(--px)*2) 0 #000;
+  text-shadow:3px 3px 0 var(--blood), 6px 6px 0 #000;
   letter-spacing:1px;
 }
 .wordmark small{
-  display:block;font-size:8px;margin-top:9px;color:var(--dim);
+  display:block;font-family:var(--ui);font-size:8px;margin-top:12px;color:var(--dim);
   text-shadow:none;letter-spacing:2px;
 }
+/* The name is the way back to the lobby, so it has to look pressable. */
+.wordmark button{
+  font:inherit;color:inherit;background:none;border:0;padding:0;
+  letter-spacing:inherit;text-shadow:inherit;cursor:pointer;
+}
+.wordmark button:hover{color:var(--ember, #ffb469)}
+.wordmark button:focus-visible{outline:3px solid var(--gold);outline-offset:3px}
 .titlebar .gap{flex:1}
 
 /* Round plate — the HUD counter */
@@ -439,11 +471,11 @@ kbd{
   display:grid;place-items:center;text-align:center;
   transition:opacity .5s steps(5,end);
 }
-#boot canvas{width:150px;height:150px}
+#boot canvas{width:clamp(96px, 26vw, 150px);height:clamp(96px, 26vw, 150px)}
 #boot .t{
-  font-family:var(--ui);font-size:24px;color:var(--flame);margin-top:26px;
-  text-shadow:var(--px) var(--px) 0 var(--blood), calc(var(--px)*2) calc(var(--px)*2) 0 #000;
-  line-height:1.5;
+  font-family:var(--black);font-size:clamp(44px, 15vw, 72px);color:var(--flame);margin-top:18px;
+  text-shadow:4px 4px 0 var(--blood), 8px 8px 0 #000;
+  line-height:1;letter-spacing:2px;
 }
 #boot .s{font-family:var(--ui);font-size:8px;color:var(--dim);margin-top:16px;letter-spacing:3px}
 #boot .k{
@@ -475,6 +507,7 @@ body[data-screen="chars"] #scr-chars,
 body[data-screen="load"]  #scr-load,
 body[data-screen="enc"]   #scr-enc{display:block}
 
+#scr-menu .scr-in{max-width:1020px}
 .scr-in{
   max-width:760px;margin:0 auto;
   padding-inline:20px;
@@ -483,9 +516,9 @@ body[data-screen="enc"]   #scr-enc{display:block}
 }
 .scr-head{text-align:center;margin-bottom:6px}
 .scr-head h1{
-  font-family:var(--ui);font-size:21px;line-height:1.5;color:var(--flame);margin:0;
-  text-shadow:var(--px) var(--px) 0 var(--blood), calc(var(--px)*2) calc(var(--px)*2) 0 #000;
-  text-wrap:balance;
+  font-family:var(--black);font-size:clamp(34px, 10vw, 58px);line-height:1.05;color:var(--flame);margin:0;
+  text-shadow:4px 4px 0 var(--blood), 8px 8px 0 #000;
+  letter-spacing:1px;text-wrap:balance;
 }
 .scr-head .tagline{
   display:block;font-family:var(--ui);font-size:8px;color:var(--dim);
@@ -500,30 +533,49 @@ body[data-screen="enc"]   #scr-enc{display:block}
   box-shadow:0 0 0 2px var(--gold);vertical-align:middle;
 }
 
-/* ---------- the menu, as an RPG command list ---------- */
-.menu-list{display:flex;flex-direction:column;gap:10px}
+/* ---------- the lobby ----------
+   Four heraldic banners hung in a row, each one drawn as a sprite rather than
+   assembled from boxes: rod, finials, tabs, gold trim, a shield carrying the
+   house emblem, a chain swag and three tails. The label sits on the cloth.
+
+   Below 640px the same row becomes a snap carousel, one banner at a time with
+   its neighbours peeking, arrows either side, and a tap to enter. */
+.lobby{position:relative}
+.menu-list{
+  position:relative;
+  display:flex;gap:16px;align-items:flex-start;
+}
 .menu-btn{
-  display:block;width:100%;text-align:left;position:relative;
-  padding:16px 18px 16px 42px;border:0;background:#17121d;
-  box-shadow:inset 0 0 0 2px var(--edge-dim);
-  transition:background .1s;
+  flex:1 1 0;min-width:0;position:relative;display:block;
+  background:none;border:0;padding:0;cursor:pointer;
+}
+.flag-art{display:block;transition:transform .12s steps(2), filter .12s}
+.flag-art canvas{display:block;width:100%;height:auto}
+.flag-text{
+  position:absolute;left:19%;right:19%;top:44%;bottom:33%;
+  display:flex;flex-direction:column;justify-content:center;
+  text-align:center;overflow:hidden;
 }
 .menu-btn b{
-  display:block;font-family:var(--ui);font-size:12px;color:var(--bone);
-  letter-spacing:1px;line-height:1.4;
+  display:block;font-family:var(--ui);font-size:9px;color:var(--bone);
+  line-height:1.55;letter-spacing:1px;
+  text-shadow:2px 2px 0 rgba(0,0,0,.55);
 }
-.menu-btn small{display:block;font-size:18px;color:var(--dim);margin-top:9px}
-/* The selector arrow, parked off the left until the row is picked. */
-.menu-btn::before{
-  content:"▶";position:absolute;left:16px;top:50%;margin-top:-10px;
-  color:var(--flame);font-size:18px;opacity:0;
+.menu-btn small{
+  display:block;font-size:16px;line-height:1.25;margin-top:10px;
+  color:rgba(247,239,224,.74);
 }
-.menu-btn:hover:not(:disabled),.menu-btn:focus-visible{background:#2b2333;outline:0}
-.menu-btn:hover:not(:disabled)::before,.menu-btn:focus-visible::before{opacity:1}
-.menu-btn:disabled{opacity:.42;cursor:not-allowed}
-.menu-btn.hot{box-shadow:inset 0 0 0 2px var(--flame)}
-.menu-btn.hot b{color:var(--flame)}
+.menu-btn:hover:not(:disabled) .flag-art,
+.menu-btn:focus-visible .flag-art{
+  transform:translateY(5px);
+  filter:brightness(1.16) drop-shadow(0 0 10px rgba(232,195,60,.55));
+}
+.menu-btn:focus-visible{outline:0}
+.menu-btn:disabled{cursor:not-allowed}
+.menu-btn:disabled .flag-art{filter:grayscale(.72) brightness(.5)}
+.menu-btn:disabled .flag-text{opacity:.5}
 .menu-btn[hidden]{display:none}
+.lobby-arrow,.pips{display:none}
 
 /* ---------- party and campaign rows ---------- */
 .list{display:flex;flex-direction:column;gap:8px}
@@ -585,7 +637,29 @@ textarea:focus{outline:0;box-shadow:inset 0 0 0 2px var(--gold)}
   .scr-in{padding-inline:16px}
   .prow{flex-wrap:wrap}
   .prow .enc-init{width:100%}
-  .scr-head h1{font-size:16px}
+  /* one banner at a time, its neighbours showing at the edges */
+  .menu-list{
+    overflow-x:auto;scroll-snap-type:x mandatory;
+    gap:12px;padding-inline:18%;
+    scrollbar-width:none;-ms-overflow-style:none;
+  }
+  .menu-list::-webkit-scrollbar{display:none}
+  .menu-btn{flex:0 0 64%;scroll-snap-align:center}
+  .menu-btn:not(.cur) .flag-art{filter:brightness(.45) saturate(.55)}
+  .menu-btn:not(.cur) .flag-text{opacity:.4}
+  .lobby-arrow{
+    display:grid;place-items:center;position:absolute;
+    top:34%;width:42px;height:58px;z-index:5;
+    background:none;border:0;padding:0;
+    color:var(--gold);font-size:26px;line-height:1;
+    text-shadow:3px 3px 0 #000;
+  }
+  .lobby-arrow:disabled{opacity:.22}
+  #m-prev{left:-10px}
+  #m-next{right:-10px}
+  .pips{display:flex;gap:8px;justify-content:center;margin-top:20px}
+  .pips i{display:block;width:10px;height:10px;background:var(--edge-dim)}
+  .pips i.on{background:var(--gold)}
   .wordmark{font-size:14px}
   .field.grow{min-width:110px}
 }
@@ -596,13 +670,14 @@ textarea:focus{outline:0;box-shadow:inset 0 0 0 2px var(--gold)}
 </style>
 
 <script>document.body.dataset.screen="menu";</script>
+<div id="dungeon" aria-hidden="true"><span class="fade"></span></div>
 <div class="crt-glow"></div>
 <div class="crt-lines"></div>
 
 <div id="boot">
   <div>
     <canvas id="boot-sprite" width="20" height="20"></canvas>
-    <div class="t">ROLL<br>INITIATIVE</div>
+    <div class="t">Roll<br>Initiative</div>
     <div class="s">A DUNGEON BATTLE TRACKER</div>
     <div class="k">PRESS ANY KEY</div>
   </div>
@@ -611,7 +686,7 @@ textarea:focus{outline:0;box-shadow:inset 0 0 0 2px var(--gold)}
 <div class="stage">
   <div class="titlebar">
     <button class="btn btn-tiny" id="btn-menu" title="Back to the main menu">&#9776; MENU</button>
-    <h1 class="wordmark">ROLL INITIATIVE<small id="stage-sub">8-BIT PROTOTYPE</small></h1>
+    <h1 class="wordmark"><button type="button" id="btn-home" title="Back to the lobby">Roll Initiative</button><small id="stage-sub">8-BIT PROTOTYPE</small></h1>
     <div class="gap"></div>
     <div class="round-plate pxl">
       <span class="lbl">ROUND</span>
@@ -718,26 +793,35 @@ textarea:focus{outline:0;box-shadow:inset 0 0 0 2px var(--gold)}
   <div class="scr-in">
     <div class="scr-head">
       <canvas id="menu-sprite" width="20" height="20"></canvas>
-      <h1>ROLL INITIATIVE</h1>
+      <h1>Roll Initiative</h1>
       <span class="tagline">A DUNGEON BATTLE TRACKER</span>
     </div>
 
     <div class="pane pxl">
       <h2>BEGIN</h2>
-      <div class="menu-list">
-        <button type="button" id="m-resume" class="menu-btn hot" hidden>
-          <b>Resume Battle</b><small id="m-resume-say"></small>
-        </button>
-        <button type="button" id="m-new" class="menu-btn">
-          <b>New Campaign</b><small>Enter your players once, then bring them to every encounter.</small>
-        </button>
-        <button type="button" id="m-load" class="menu-btn">
-          <b>Load Campaign</b><small id="m-load-say">No campaigns saved yet.</small>
-        </button>
-        <button type="button" id="m-quick" class="menu-btn">
-          <b>Quick Play</b><small>Straight to the tracker. Nothing is kept in a campaign.</small>
-        </button>
+      <div class="lobby">
+        <button type="button" class="lobby-arrow" id="m-prev" aria-label="Previous choice">◀</button>
+        <div class="menu-list" id="menu-list">
+          <button type="button" id="m-resume" class="menu-btn" data-theme="resume" data-emblem="swords" hidden>
+            <span class="flag-art"></span>
+            <span class="flag-text"><b>Resume Battle</b><small id="m-resume-say"></small></span>
+          </button>
+          <button type="button" id="m-new" class="menu-btn" data-theme="campaign" data-emblem="d20">
+            <span class="flag-art"></span>
+            <span class="flag-text"><b>New Campaign</b><small>Enter your players once.</small></span>
+          </button>
+          <button type="button" id="m-load" class="menu-btn" data-theme="load" data-emblem="scroll">
+            <span class="flag-art"></span>
+            <span class="flag-text"><b>Load Campaign</b><small id="m-load-say">No campaigns yet.</small></span>
+          </button>
+          <button type="button" id="m-quick" class="menu-btn" data-theme="quick" data-emblem="hourglass">
+            <span class="flag-art"></span>
+            <span class="flag-text"><b>Quick Play</b><small>Straight to the tracker.</small></span>
+          </button>
+        </div>
+        <button type="button" class="lobby-arrow" id="m-next" aria-label="Next choice">▶</button>
       </div>
+      <div class="pips" id="m-pips" aria-hidden="true"></div>
     </div>
 
     <div class="scr-foot">
@@ -750,7 +834,7 @@ textarea:focus{outline:0;box-shadow:inset 0 0 0 2px var(--gold)}
 <div class="scr" id="scr-chars">
   <div class="scr-in">
     <div class="scr-head">
-      <h1 id="cc-title">NEW CAMPAIGN</h1>
+      <h1 id="cc-title">New Campaign</h1>
       <span class="tagline">YOUR PLAYERS, ENTERED ONCE</span>
     </div>
 
@@ -821,7 +905,7 @@ textarea:focus{outline:0;box-shadow:inset 0 0 0 2px var(--gold)}
     </div>
 
     <div class="scr-foot">
-      <button class="btn" id="cc-back">&larr; MENU</button>
+      <button class="btn" id="cc-back">&larr; CAMPAIGNS</button>
       <div class="gap"></div>
       <button class="btn btn-go" id="cc-save">SAVE CAMPAIGN &rarr;</button>
     </div>
@@ -831,7 +915,7 @@ textarea:focus{outline:0;box-shadow:inset 0 0 0 2px var(--gold)}
 <div class="scr" id="scr-load">
   <div class="scr-in">
     <div class="scr-head">
-      <h1>LOAD CAMPAIGN</h1>
+      <h1>Load Campaign</h1>
       <span class="tagline">CHOOSE A CAMPAIGN</span>
     </div>
 
@@ -843,6 +927,7 @@ textarea:focus{outline:0;box-shadow:inset 0 0 0 2px var(--gold)}
     <div class="scr-foot">
       <button class="btn" id="ld-back">&larr; MENU</button>
       <div class="gap"></div>
+      <button class="btn btn-go" id="ld-new">+ NEW CAMPAIGN</button>
     </div>
   </div>
 </div>
@@ -850,7 +935,7 @@ textarea:focus{outline:0;box-shadow:inset 0 0 0 2px var(--gold)}
 <div class="scr" id="scr-enc">
   <div class="scr-in">
     <div class="scr-head">
-      <h1 id="enc-title">WHO IS HERE</h1>
+      <h1 id="enc-title">Who is here</h1>
       <span class="tagline">TICK WHO IS AT THE TABLE TONIGHT</span>
     </div>
 
@@ -931,6 +1016,78 @@ textarea:focus{outline:0;box-shadow:inset 0 0 0 2px var(--gold)}
     g.font = Math.round(n * 0.92) + "px " +
       '"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif';
     g.fillText(emo(ch), n / 2, n / 2 + 1);
+    return cv;
+  }
+
+
+  /* ============================================================
+     The d20. No emoji carries one, so the die is painted onto a
+     24x24 grid and upscaled like every other sprite: hexagon
+     silhouette, a lit top face, two shaded lower faces, and the 20
+     stamped in dark pixels on the face that is showing.
+     ============================================================ */
+  function d20Sprite(){
+    const N = 24;
+    const OUT = "#170d12", LIT = "#f7efe0", LEFT = "#f26b3f", RIGHT = "#a11d1d";
+
+    // even-odd ray cast against a polygon given in grid coordinates
+    const inPoly = (x, y, pts) => {
+      let hit = false;
+      for(let i = 0, j = pts.length - 1; i < pts.length; j = i++){
+        const xi = pts[i][0], yi = pts[i][1], xj = pts[j][0], yj = pts[j][1];
+        if((yi > y) !== (yj > y) && x < (xj - xi) * (y - yi) / (yj - yi) + xi) hit = !hit;
+      }
+      return hit;
+    };
+
+    const body = [[12,0],[23.4,6.5],[23.4,17.5],[12,24],[0.6,17.5],[0.6,6.5]];
+    const face = [[12,2.5],[20.5,16],[3.5,16]];
+
+    const cells = [];
+    for(let y = 0; y < N; y++){
+      cells[y] = [];
+      for(let x = 0; x < N; x++){
+        const cx = x + 0.5, cy = y + 0.5;
+        if(!inPoly(cx, cy, body)){ cells[y][x] = null; continue; }
+        cells[y][x] = inPoly(cx, cy, face) ? LIT : (cx < 12 ? LEFT : RIGHT);
+      }
+    }
+
+    // any filled cell that touches the outside becomes the border
+    const edged = cells.map(r => r.slice());
+    for(let y = 0; y < N; y++){
+      for(let x = 0; x < N; x++){
+        if(!cells[y][x]) continue;
+        const open = [[1,0],[-1,0],[0,1],[0,-1]].some(d => {
+          const nx = x + d[0], ny = y + d[1];
+          return nx < 0 || ny < 0 || nx >= N || ny >= N || !cells[ny][nx];
+        });
+        if(open) edged[y][x] = OUT;
+      }
+    }
+
+    // "20" in 3x5 digits, low enough on the face to have room
+    const GLYPH = {
+      "2":["111","001","111","100","111"],
+      "0":["111","101","101","101","111"]
+    };
+    const stamp = (ch, ox, oy) => GLYPH[ch].forEach((row, dy) => {
+      for(let dx = 0; dx < row.length; dx++)
+        if(row[dx] === "1" && edged[oy + dy]) edged[oy + dy][ox + dx] = OUT;
+    });
+    stamp("2", 8, 9);
+    stamp("0", 12, 9);
+
+    const cv = document.createElement("canvas");
+    cv.width = N; cv.height = N;
+    const g = cv.getContext("2d");
+    for(let y = 0; y < N; y++){
+      for(let x = 0; x < N; x++){
+        if(!edged[y][x]) continue;
+        g.fillStyle = edged[y][x];
+        g.fillRect(x, y, 1, 1);
+      }
+    }
     return cv;
   }
 
@@ -1656,9 +1813,9 @@ textarea:focus{outline:0;box-shadow:inset 0 0 0 2px var(--gold)}
   /* ---------------- boot ---------------- */
   (function boot(){
     const host = $("#boot-sprite");
-    host.replaceWith(sprite("🐉", 20));
+    host.replaceWith(d20Sprite());
     document.querySelector("#boot canvas").id = "boot-sprite";
-    $("#menu-sprite").replaceWith(sprite("🐉", 20));
+    $("#menu-sprite").replaceWith(d20Sprite());
     let done = false;
     const finish = () => {
       if(done) return;
@@ -1846,6 +2003,262 @@ textarea:focus{outline:0;box-shadow:inset 0 0 0 2px var(--gold)}
     return w;
   }
 
+
+  /* ============================================================
+     The lobby banners. Each is painted onto a 44x88 grid: rod and
+     finials, three tabs, gold-trimmed cloth with a lit hoist and a
+     shaded fly, a shield carrying the emblem, a chain swag, and
+     three tails cut out of the bottom.
+     ============================================================ */
+  const BANNER_W = 44, BANNER_H = 88;
+  const GOLD = "#e8c33c", GOLD_DIM = "#a8871f", SHIELD = "#14101c", INK = "#f7efe0";
+
+  const BANNER_THEMES = {
+    resume:   {field:"#8c1f1f", lit:"#b03030", dim:"#5c1212"},
+    campaign: {field:"#1f4f8c", lit:"#2f6fb8", dim:"#143355"},
+    load:     {field:"#1f6b3a", lit:"#2f8f50", dim:"#123f22"},
+    quick:    {field:"#4a2478", lit:"#653499", dim:"#2a1145"}
+  };
+
+  const EMBLEMS = {
+    d20:["....###....","...#...#...","..#.....#..",".#.......#.",
+         "#....#....#","#...#.#...#","#..#...#..#","#.#######.#",
+         "#.........#",".#.......#.","..#.....#..","...#...#...","....###...."],
+    scroll:[".#########.",".#.......#.",".#########.","..#######..",
+            "..#.....#..","..#.###.#..","..#.....#..","..#.###.#..",
+            "..#.....#..","..#######..",".#########.",".#.......#.",".#########."],
+    hourglass:["###########",".#########.","..#######..","...#####...",
+               "....###....",".....#.....",".....#.....","....###....",
+               "...#####...","..#######..",".#########.","###########","..........."],
+    swords:["#.........#","##.......##",".##.....##.","..##...##..",
+            "...##.##...","....###....","...##.##...","..##...##..",
+            ".#########.","..#.....#..","..#.....#..",".###...###.","..........."]
+  };
+
+  function bannerSprite(themeKey, emblemKey){
+    const W = BANNER_W, H = BANNER_H;
+    const t = BANNER_THEMES[themeKey] || BANNER_THEMES.campaign;
+    const g = [];
+    for(let y = 0; y < H; y++) g[y] = new Array(W).fill(null);
+    const R = (x, y, w, h, c) => {
+      for(let j = y; j < y + h; j++)
+        for(let i = x; i < x + w; i++)
+          if(g[j] && i >= 0 && i < W) g[j][i] = c;
+    };
+
+    // cloth, full height: the tails are cut out of it further down
+    R(6, 8, 32, 80, t.field);
+    R(9, 8, 5, 80, t.lit);
+    R(30, 8, 5, 80, t.dim);
+    R(6, 8, 3, 80, GOLD);
+    R(35, 8, 3, 80, GOLD);
+
+    // rod, with a finial capping each end
+    R(1, 2, 42, 4, GOLD_DIM);
+    R(0, 1, 6, 6, GOLD);
+    R(38, 1, 6, 6, GOLD);
+
+    // three tabs, each with a gap you see the rod through
+    [11, 20, 29].forEach(x => { R(x, 3, 5, 8, GOLD); R(x + 1, 5, 3, 3, null); });
+
+    // shield, bordered in gold
+    const pts = [[14,14],[29,14],[29,30],[21.5,38],[14,30]];
+    const inPoly = (x, y) => {
+      let hit = false;
+      for(let i = 0, j = pts.length - 1; i < pts.length; j = i++){
+        const xi = pts[i][0], yi = pts[i][1], xj = pts[j][0], yj = pts[j][1];
+        if((yi > y) !== (yj > y) && x < (xj - xi) * (y - yi) / (yj - yi) + xi) hit = !hit;
+      }
+      return hit;
+    };
+    const inside = [];
+    for(let y = 0; y < H; y++){
+      inside[y] = [];
+      for(let x = 0; x < W; x++) inside[y][x] = inPoly(x + 0.5, y + 0.5);
+    }
+    for(let y = 0; y < H; y++){
+      for(let x = 0; x < W; x++){
+        if(!inside[y][x]) continue;
+        const edge = [[1,0],[-1,0],[0,1],[0,-1]].some(d => {
+          const nx = x + d[0], ny = y + d[1];
+          return nx < 0 || ny < 0 || nx >= W || ny >= H || !inside[ny][nx];
+        });
+        g[y][x] = edge ? GOLD : SHIELD;
+      }
+    }
+    (EMBLEMS[emblemKey] || EMBLEMS.d20).forEach((row, dy) => {
+      for(let dx = 0; dx < row.length; dx++)
+        if(row[dx] === "#" && g[17 + dy]) g[17 + dy][16 + dx] = INK;
+    });
+
+    // chain swag, dotted, dipping toward the middle
+    for(let x = 9; x <= 34; x++){
+      const away = (x - 21.5) / 12.5;
+      if(x % 2 === 0) g[68 - Math.round(away * away * 7)][x] = GOLD;
+    }
+
+    // the cloth narrows to a point, pennant fashion, the trim following it down
+    for(let y = 70; y < H; y++){
+      const k = (y - 70) / (H - 1 - 70);
+      const L = Math.round(6 + k * 15);
+      const Rt = Math.round(37 - k * 15);
+      for(let x = 0; x < W; x++) g[y][x] = null;
+      for(let x = L; x <= Rt; x++){
+        g[y][x] = (x < L + 3 || x > Rt - 3) ? GOLD
+                : x < 14 ? t.lit
+                : x > 29 ? t.dim
+                : t.field;
+      }
+    }
+
+    const cv = document.createElement("canvas");
+    cv.width = W; cv.height = H;
+    const ctx = cv.getContext("2d");
+    for(let y = 0; y < H; y++){
+      for(let x = 0; x < W; x++){
+        if(!g[y][x]) continue;
+        ctx.fillStyle = g[y][x];
+        ctx.fillRect(x, y, 1, 1);
+      }
+    }
+    return cv;
+  }
+
+
+  /* ============================================================
+     The lobby backdrop: courses of stone, three arched alcoves,
+     two sconces and a flagstone floor. Greys only, so the CSS can
+     hold it back without fighting a colour.
+     ============================================================ */
+  function dungeonSprite(){
+    const W = 200, H = 120;
+    const cv = document.createElement("canvas");
+    cv.width = W; cv.height = H;
+    const g = cv.getContext("2d");
+    const R = (x, y, w, h, c) => { g.fillStyle = c; g.fillRect(x, y, w, h); };
+
+    // stable noise, so the wall is the same wall on every load
+    const rnd = (a, b) => {
+      const n = Math.sin(a * 127.1 + b * 311.7) * 43758.5453;
+      return n - Math.floor(n);
+    };
+
+    const MORTAR = "#191a1d";
+    const STONE = ["#33343a","#3b3c43","#43444c","#4b4c55","#2d2e33"];
+    R(0, 0, W, H, MORTAR);
+
+    // courses of stone, every other one offset by half a block
+    const BW = 25, BH = 10;
+    for(let row = 0; row * BH < H; row++){
+      const y = row * BH;
+      const off = (row % 2) ? -Math.round(BW / 2) : 0;
+      for(let x = off; x < W; x += BW){
+        R(x + 1, y + 1, BW - 2, BH - 2, STONE[Math.floor(rnd(row, x) * STONE.length)]);
+        R(x + 1, y + 1, BW - 2, 1, "#54555e");        // lit top edge
+        R(x + 1, y + BH - 3, BW - 2, 1, "#232429");   // shaded foot
+      }
+    }
+
+    // three arched alcoves
+    [24, 88, 152].forEach(ax => {
+      const aw = 30, top = 34, base = 96, r = aw / 2, cx = ax + r;
+      for(let y = top; y < base; y++){
+        let half = r;
+        if(y < top + r){                              // the semicircular head
+          const dy = (top + r) - y;
+          half = Math.sqrt(Math.max(0, r * r - dy * dy));
+        }
+        const L = Math.round(cx - half), Rr = Math.round(cx + half);
+        if(Rr - L < 2) continue;
+        R(L, y, Rr - L, 1, "#0f1013");
+        R(L, y, 2, 1, "#50515a");
+        R(Rr - 2, y, 2, 1, "#50515a");
+      }
+      R(ax - 2, base, aw + 4, 3, "#4a4b54");          // sill
+    });
+
+    // two sconces, each with a soft halo
+    [60, 124].forEach(sx => {
+      for(let ry = -6; ry <= 6; ry++){
+        for(let rx = -6; rx <= 6; rx++){
+          const d = Math.sqrt(rx * rx + ry * ry);
+          if(d > 6) continue;
+          const f = 1 - d / 6;
+          if(f < 0.15) continue;
+          R(sx + rx, 46 + ry, 1, 1, f > 0.6 ? "#75767f" : "#5c5d66");
+        }
+      }
+      R(sx - 1, 50, 3, 6, "#2a2b30");
+    });
+
+    // flagstone floor
+    R(0, 102, W, 2, "#141519");
+    for(let y = 104; y < H; y += 8){
+      const off = ((y / 8) % 2) ? -10 : 0;
+      for(let x = off; x < W; x += 20)
+        R(x + 1, y + 1, 18, 6, STONE[Math.floor(rnd(y, x) * STONE.length)]);
+    }
+
+    return cv;
+  }
+
+  $("#dungeon").prepend(dungeonSprite());
+
+  /* ---------------- the lobby carousel ----------------
+     One row on a desktop; below 640px the same row scrolls and snaps, so a
+     swipe works without any of this, and the arrows just drive the same
+     scroll. Nothing here changes what a tap on a banner does. */
+  const menuList = $("#menu-list");
+  let lobbyAt = 0;
+
+  const lobbyItems = () =>
+    Array.from(menuList.querySelectorAll(".menu-btn")).filter(b => !b.hidden);
+
+  function lobbySync(){
+    const items = lobbyItems();
+    const pips = $("#m-pips");
+    if(pips.childElementCount !== items.length){
+      pips.innerHTML = "";
+      items.forEach(() => pips.appendChild(document.createElement("i")));
+    }
+    const mid = menuList.scrollLeft + menuList.clientWidth / 2;
+    let best = 0, bestD = Infinity;
+    items.forEach((btn, i) => {
+      const d = Math.abs(btn.offsetLeft + btn.offsetWidth / 2 - mid);
+      if(d < bestD){ bestD = d; best = i; }
+    });
+    lobbyAt = best;
+    items.forEach((btn, i) => btn.classList.toggle("cur", i === best));
+    Array.from(pips.children).forEach((pip, i) => pip.classList.toggle("on", i === best));
+    $("#m-prev").disabled = best <= 0;
+    $("#m-next").disabled = best >= items.length - 1;
+  }
+
+  function lobbyGo(dir){
+    const items = lobbyItems();
+    const btn = items[clamp(lobbyAt + dir, 0, items.length - 1)];
+    if(!btn) return;
+    menuList.scrollTo({
+      left: btn.offsetLeft - (menuList.clientWidth - btn.offsetWidth) / 2,
+      behavior: "smooth"
+    });
+  }
+
+  let lobbyTick = 0;
+  menuList.addEventListener("scroll", () => {
+    if(lobbyTick) return;
+    lobbyTick = requestAnimationFrame(() => { lobbyTick = 0; lobbySync(); });
+  }, {passive:true});
+  $("#m-prev").addEventListener("click", () => lobbyGo(-1));
+  $("#m-next").addEventListener("click", () => lobbyGo(1));
+  window.addEventListener("resize", lobbySync);
+
+  // hang the cloth on every banner once
+  Array.from(document.querySelectorAll(".menu-btn")).forEach(btn => {
+    btn.querySelector(".flag-art")
+       .appendChild(bannerSprite(btn.dataset.theme, btn.dataset.emblem));
+  });
+
   /* ---------------- main menu ---------------- */
   function paintMenu(){
     const n = state.combatants.length;
@@ -1859,8 +2272,9 @@ textarea:focus{outline:0;box-shadow:inset 0 0 0 2px var(--gold)}
     }
     const c = campaigns.list.length;
     $("#m-load-say").textContent = c ? plural(c, "campaign") + " saved."
-                                     : "No campaigns saved yet.";
+                                     : "No campaigns yet.";
     $("#m-load").disabled = !c;
+    lobbySync();
   }
 
   /* ---------------- character creation ---------------- */
@@ -1877,7 +2291,7 @@ textarea:focus{outline:0;box-shadow:inset 0 0 0 2px var(--gold)}
     ccChars  = camp ? JSON.parse(JSON.stringify(camp.chars)) : [];
     ccDirty  = false;
     ccF.camp.value = camp ? camp.name : "";
-    $("#cc-title").textContent = camp ? camp.name.toUpperCase() : "NEW CAMPAIGN";
+    $("#cc-title").textContent = camp ? camp.name : "New Campaign";
     $("#cc-msg").textContent = "";
     ccReset();
     showScreen("chars");
@@ -1992,8 +2406,10 @@ textarea:focus{outline:0;box-shadow:inset 0 0 0 2px var(--gold)}
     encOpen(camp.id);
   }
 
+  /* Back out of character creation to the campaign list, never to the lobby:
+     the person is working through their campaigns, not leaving the app. */
   function ccLeave(){
-    const go = () => { ccDirty = false; showScreen("menu"); };
+    const go = () => { ccDirty = false; showScreen("load"); };
     if(ccDirty) askConfirm("Leave without saving",
       "This campaign has changes that have not been saved yet.", "Discard changes", go);
     else go();
@@ -2049,7 +2465,7 @@ textarea:focus{outline:0;box-shadow:inset 0 0 0 2px var(--gold)}
     const camp = findCampaign(id);
     if(!camp) return;
     encCampId = camp.id;
-    $("#enc-title").textContent = camp.name.toUpperCase();
+    $("#enc-title").textContent = camp.name;
     showScreen("enc");
   }
 
@@ -2232,6 +2648,7 @@ textarea:focus{outline:0;box-shadow:inset 0 0 0 2px var(--gold)}
     }));
 
   $("#ld-back").addEventListener("click", () => showScreen("menu"));
+  $("#ld-new").addEventListener("click", () => ccOpen(null));
 
   $("#enc-back").addEventListener("click", () => showScreen("menu"));
   $("#enc-edit").addEventListener("click", () => ccOpen(encCampId));
@@ -2247,6 +2664,7 @@ textarea:focus{outline:0;box-shadow:inset 0 0 0 2px var(--gold)}
   });
 
   $("#btn-menu").addEventListener("click", () => { stashBattle(); showScreen("menu"); });
+  $("#btn-home").addEventListener("click", () => { stashBattle(); showScreen("menu"); });
 
   /* Keeping a creature is on the toolbar rather than in an edit dialog, which
      this prototype does not have. It saves whoever is up. */
