@@ -55,10 +55,6 @@ Note that each device keeps its own battle — a fight set up on a laptop won't 
 - Notes show as a 📝 chip on the card and in full in the banner on that character's turn.
 
 **Settings** — the ⚙ button in the top corner
-- *Text size* scales the entire interface, portraits and badges included, not just the labels. Four
-  steps from Small to Larger, for reading the tracker from across the table.
-- *Accent colour* — Blood, Ember, Arcane, Verdant, Frost or Slate. One choice recolours every fill,
-  badge, border and glow in the app.
 - *Icons* switches between your device's own emoji and one shared downloaded set, so the tracker can
   look identical across devices. The shared set needs the internet once, then caches.
 - *Behaviour* holds the tie prompts, the help text, the battle log rail and a reduce-motion switch.
@@ -68,7 +64,7 @@ Note that each device keeps its own battle — a fight set up on a laptop won't 
 
 | File | What it is |
 | --- | --- |
-| `index.html` | The entire application — markup, styles, embedded font and script in one file. |
+| `index.html` | The entire application — markup, styles, embedded fonts and script in one file. |
 | `build.js` | Copies `index.html` and `web/` into `www/`, the folder Capacitor packages. |
 | `gradle.js` | Runs Gradle with the pinned JDK, on any platform or shell. |
 | `capacitor.config.json` | App id, display name and native shell settings. |
@@ -233,10 +229,11 @@ iOS than on Android, and it is the first item in the list below.
 
 ## Licences and attribution
 
-Two typefaces are embedded, both under the SIL Open Font License 1.1:
-[Cormorant SC](https://fonts.google.com/specimen/Cormorant+SC) for headings and labels, chosen to match
-the wordmark in the logo, and [Inter](https://rsms.me/inter/) for body text, health totals and the
-battle log, where it stays readable at small sizes.
+The interface is an 8-bit pixel-art look, and its three typefaces are embedded, all under the SIL Open
+Font License 1.1: [Press Start 2P](https://fonts.google.com/specimen/Press+Start+2P) for labels,
+buttons and numbers, [VT323](https://fonts.google.com/specimen/VT323) for names, body text and the
+battle log, and [Jacquarda Bastarda 9](https://fonts.google.com/specimen/Jacquarda+Bastarda+9) for the
+blackletter title lines. Every icon is drawn from the device's emoji and scaled up as a pixel sprite.
 
 Rules references come from the System Reference Document 5.1, used under the
 [Creative Commons Attribution 4.0 International](https://creativecommons.org/licenses/by/4.0/)
