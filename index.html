@@ -145,7 +145,7 @@ unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304
   /* ---------- the pixel frame ----------
      Four offset shadows instead of a border. Anything that sets its own
      box-shadow for a glow has to restate these four first. */
-  .banner,.track-shell,.panel,.log-shell,.modal,.round-plate,.card,#install{
+  .banner,.stage,.track-shell,.panel,.log-shell,.modal,.round-plate,.card,#install{
     box-shadow:
       0 calc(var(--px) * -1) 0 0 var(--fc),
       0 var(--px) 0 0 var(--fc),
@@ -630,6 +630,9 @@ unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304
     transition:transform .5s steps(6,end);
   }
   #install.up{transform:translateX(-50%) translateY(0)}
+  /* the display above would otherwise beat the hidden attribute, and on a phone
+     the slide-out offset alone does not take it fully off screen */
+  #install[hidden]{display:none}
   #install .mark{flex:0 0 auto;width:34px;height:34px;background:center/contain no-repeat;image-rendering:pixelated}
   #install .txt{min-width:0;line-height:1.3}
   #install .txt b{display:block;font-family:var(--ui);font-size:9px;font-weight:400;color:var(--bone);text-transform:uppercase}
@@ -840,6 +843,45 @@ unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304
   .set-row span{font-size:19px;line-height:1.3}
   .set-row small{display:block;color:var(--dim);font-size:16px;margin-top:4px;line-height:1.3}
 
+  /* ---------- the spotlight ----------
+     Whoever is up, drawn at a size that reads from across the table, with the
+     turn's two actions under it. The card is the same cardEl() as in the strip. */
+  .stage{
+    background:var(--stone);margin-bottom:28px;padding:40px 22px 26px;
+    display:flex;flex-direction:column;align-items:center;gap:30px;
+  }
+  /* the display above would otherwise beat the hidden attribute */
+  .stage[hidden]{display:none}
+  .stage-card .card{flex:none;width:236px;padding:22px 20px 18px;cursor:default;touch-action:auto}
+  .stage-card .card::before{display:none}
+  .stage-card .name{font-size:30px;margin-top:18px}
+  .stage-card .init-badge,.stage-card .ac-badge{font-size:12px;padding:7px 7px 6px;min-width:32px}
+  .stage-card .badge-tag{font-size:7px}
+  .stage-card .cond-row{min-height:32px}
+  .stage-card .cond-row .chip canvas{width:22px;height:22px}
+  .stage-card .hp-pips{height:18px}
+  .stage-card .hp-txt{font-size:10px}
+  .stage-card .float{font-size:22px}
+  .stage-actions{display:flex;gap:22px;flex-wrap:wrap;justify-content:center}
+  .btn-big{font-size:14px;padding:18px 26px;min-width:220px}
+  .btn-big .sym{font-size:20px}
+  .float.miss{color:var(--dim)}
+
+  /* attack dialog */
+  .atk-say{margin:0;align-self:center;flex:1;min-width:180px}
+  .atk-list{max-height:260px;overflow-y:auto;padding:2px}
+  /* The rows are <label>s sitting inside a .field, so they would otherwise
+     pick up the field label's small uppercase pixel type. */
+  .field .atk-row{
+    cursor:pointer;font-family:var(--crt);font-size:19px;letter-spacing:0;
+    text-transform:none;color:var(--bone);
+  }
+  .atk-row.down{opacity:.5}
+  .atk-row.on{box-shadow:inset 0 0 0 2px var(--flame)}
+  .atk-row[data-type=player] .who b{color:var(--player)}
+  .atk-row[data-type=ally] .who b{color:var(--ally)}
+  .atk-row[data-type=enemy] .who b{color:var(--enemy)}
+
   /* touch devices have no hover — keep the corner controls permanently visible */
   @media (hover:none){
     .corner-btn{opacity:1;width:28px;height:26px;line-height:26px}
@@ -929,6 +971,24 @@ unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304
     .toolbar{gap:14px}
     .toolbar .btn-sm{flex:1 1 auto}
     .toolbar .spacer{display:none}
+
+    /* The spotlight card stays a card rather than turning into a row, and the
+       two actions share the width. */
+    .stage{padding:34px 12px 20px;gap:26px;margin-bottom:24px}
+    .stage-card{width:100%;display:flex;justify-content:center}
+    .stage-card .card{
+      display:flex;flex-direction:column;align-items:stretch;width:min(236px,100%);
+      padding:18px 16px 16px;
+    }
+    .stage-card .port-wrap{width:100%}
+    .stage-card .name{text-align:center;margin-top:14px;font-size:26px}
+    .stage-card .badge-tag{display:block}
+    .stage-card .cond-row{justify-content:center;margin-top:10px}
+    .stage-card .hp{margin-top:10px}
+    .stage-card .hp-txt{text-align:center}
+    .stage-actions{width:100%;gap:14px;flex-wrap:nowrap}
+    .btn-big{flex:1 1 0;min-width:0;font-size:10px;padding:16px 6px;white-space:nowrap}
+    #btn-finish .sym{display:none}
 
     /* The add panel becomes a sheet over the fight, opened by the button
        floating in the corner. */
@@ -1117,6 +1177,16 @@ unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304
     </div>
   </div>
 
+  <!-- The spotlight on whoever is up, filled by render(). Hidden before the
+       battle starts, when there is nobody to act. -->
+  <div class="stage" id="stage" hidden>
+    <div class="stage-card" id="stage-card"></div>
+    <div class="stage-actions">
+      <button type="button" id="btn-attack" class="btn-blood btn-big"><span class="sym">⚔</span> Attack</button>
+      <button type="button" id="btn-finish" class="btn-big">Finish turn <span class="sym">→</span></button>
+    </div>
+  </div>
+
   <div class="track-shell">
     <div class="track" id="track"></div>
   </div>
@@ -1220,7 +1290,11 @@ unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304
       it needs the internet the first time you switch, then works offline.<br>
       <b>Reorder</b> — on a phone the portrait is the grip: drag it up or down to move that character
       in the order. Swiping anywhere else on the row scrolls the page.<br>
-      <b>Turns</b> — <kbd>Space</kbd> or <kbd>→</kbd> advances, <kbd>←</kbd> goes back. Everything saves
+      <b>Attack</b> — once the battle starts, whoever is up takes the spotlight. <i>Attack</i> asks for the
+      damage, who took it (tick as many as an area spell hits) and any conditions it inflicts. Enter
+      <kbd>0</kbd> for a miss.<br>
+      <b>Turns</b> — <i>Finish turn</i>, <kbd>Space</kbd> or <kbd>→</kbd> moves to the next combatant; if
+      nothing happened that turn it asks before skipping. <kbd>←</kbd> goes back. Everything saves
       automatically, so you can close the tab and pick the fight back up.
     </p>
     </div><!-- /.panel-in -->
@@ -1582,6 +1656,33 @@ unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304
   <button type="button" id="install-no" title="Not now" aria-label="Not now"><span class="sym">✕</span></button>
 </div>
 
+<!-- attack: damage, who took it, and any conditions it inflicts -->
+<div id="atk" class="overlay hidden">
+  <div class="modal" style="max-width:560px">
+    <h2 id="atk-title">Attack</h2>
+    <div class="row">
+      <div class="field">
+        <label for="atk-dmg">Damage</label>
+        <input type="number" id="atk-dmg" min="0" placeholder="—" style="width:110px">
+      </div>
+      <p class="set-note atk-say">0 is a miss. Leave it blank to only apply conditions.</p>
+    </div>
+    <div class="field" style="margin-bottom:16px">
+      <label>Targets</label>
+      <div class="party-list atk-list" id="atk-targets"></div>
+    </div>
+    <div class="field">
+      <label>Conditions (optional)</label>
+      <div class="cond-list" id="atk-conds" style="max-height:180px"></div>
+    </div>
+    <div class="modal-foot">
+      <div class="spacer"></div>
+      <button type="button" id="atk-cancel">Cancel</button>
+      <button type="button" id="atk-go" class="btn-blood" disabled><span class="sym">⚔</span> Attack</button>
+    </div>
+  </div>
+</div>
+
 <!-- confirmation prompt (native confirm() is blocked in sandboxed frames) -->
 <div id="ask" class="overlay hidden">
   <div class="modal" style="max-width:430px">
@@ -1809,6 +1910,8 @@ unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304
     delete s.fontScale;
     delete s.accent;
     s.reduceMotion = s.reduceMotion === true;
+    // whether anything has happened since the current turn began (see logEvent)
+    s.turnDirty = s.turnDirty === true;
     // which campaign this fight belongs to; null for a quick-play board
     s.campaignId = typeof s.campaignId === "string" ? s.campaignId : null;
     s.log = Array.isArray(s.log) ? s.log.filter(e => e && typeof e.x === "string") : [];
@@ -1852,6 +1955,7 @@ unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304
       emojiFont:    p.emojiFont    || "system",
       showLog:      p.showLog      !== undefined ? p.showLog      : true,
       reduceMotion: p.reduceMotion === true,
+      turnDirty:false,
       log:[], combatants:[]
     };
   }
@@ -1909,7 +2013,7 @@ unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304
     try{ localStorage.setItem(STORE, JSON.stringify(state)); }catch(e){}
     restoring = false;
     // anything holding a reference into the old state must go
-    closeDialog(); closeAsk();
+    closeDialog(); closeAsk(); closeAttack();
     els.picker.classList.add("hidden");
     els.condMenu.classList.add("hidden");
     tieQueue = []; tieGroup = null;
@@ -1926,6 +2030,8 @@ unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304
     const current = {s:snapshot(), label:step.label};
     if(restoreSnapshot(step.s)) redoStack.push(current);
     else undoStack.push(step);
+    // again here: restoreSnapshot() refreshed the buttons before the push above
+    updateHistoryButtons();
   }
 
   function redo(){
@@ -1934,6 +2040,7 @@ unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304
     const current = {s:snapshot(), label:step.label};
     if(restoreSnapshot(step.s)) undoStack.push(current);
     else redoStack.push(step);
+    updateHistoryButtons();
   }
 
   function syncChrome(){
@@ -1947,6 +2054,9 @@ unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304
   const LOG_CAP = 400;
   function logEvent(kind, text){
     if(!Array.isArray(state.log)) state.log = [];
+    // Every change to the fight is logged, so the log is also what tells Finish
+    // turn whether the turn did anything. Turn and system lines are bookkeeping.
+    if(kind !== "turn" && kind !== "system") state.turnDirty = true;
     state.log.push({k:kind, x:text, round:state.round});
     if(state.log.length > LOG_CAP) state.log.splice(0, state.log.length - LOG_CAP);
   }
@@ -2114,9 +2224,9 @@ unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304
     const a = list.find(c => c.id === state.activeId);
     // the phone banner is one line, so the label loses its second word there
     const tight = window.matchMedia && window.matchMedia("(max-width:640px)").matches;
-    els.btnNext.innerHTML = (state.round === 0
-      ? (tight ? "Start" : "Start Battle")
-      : (tight ? "Next" : "Next Turn")) + ' <span class="sym">→</span>';
+    els.btnNext.innerHTML = (tight ? "Start" : "Start Battle") + ' <span class="sym">→</span>';
+    // once the fight is running, Finish turn under the spotlight takes over
+    els.btnNext.hidden = state.round > 0;
     els.turnName.textContent = a ? a.name : (state.round === 0 && list.length ? "Not started" : "—");
     els.turnName.style.color = a ? sideColor(a.type) : "var(--dim)";
     els.turnMeta.innerHTML = a ? metaLine(a) : "";
@@ -2127,11 +2237,16 @@ unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304
 
     renderLog();
 
+    // The spotlight: whoever is up, drawn large with the turn's two actions
+    // under it. The same card stays in the strip below, so the order keeps its context.
+    $("#stage").hidden = !a;
+    $("#stage-card").replaceChildren(...(a ? [cardEl(a)] : []));
+
     els.track.innerHTML = "";
     // only a running fight dims everyone who is not up
     els.track.classList.toggle("live", !!a);
     if(!list.length){
-      pendingFloat = null;
+      pendingFloats = [];
       const p = document.createElement("div");
       p.className = "empty";
       p.innerHTML = "No one has rolled yet.<br>Add your players and monsters below to begin the encounter.";
@@ -2139,14 +2254,17 @@ unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304
       return;
     }
     list.forEach(c => els.track.appendChild(cardEl(c)));
-    if(pendingFloat){ floatText(pendingFloat); pendingFloat = null; }
+    pendingFloats.forEach(floatText);
+    pendingFloats = [];
   }
 
-  /* A damage or healing number that rises off a card. It is queued by editHp()
-     and shown here, because the render that follows an edit replaces the card. */
-  let pendingFloat = null;
+  /* Damage or healing numbers that rise off a card. They are queued by editHp()
+     and the attack dialog and shown here, because the render that follows an
+     edit replaces the card. The spotlight copy gets the number when it has one. */
+  let pendingFloats = [];
   function floatText(f){
-    const card = els.track.querySelector('.card[data-id="' + f.id + '"]');
+    const sel = '.card[data-id="' + f.id + '"]';
+    const card = $("#stage-card").querySelector(sel) || els.track.querySelector(sel);
     if(!card) return;
     const el = document.createElement("div");
     el.className = "float " + f.kind;
@@ -2356,24 +2474,18 @@ unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304
         if(isNaN(n)) return;
         c.tempHp = Math.max(0, n);
         logEvent("temp", c.name + " gained " + c.tempHp + " temporary HP");
-        pendingFloat = {id:c.id, text:"+" + c.tempHp + " temp", kind:"temp"};
+        pendingFloats.push({id:c.id, text:"+" + c.tempHp + " temp", kind:"temp"});
         return;
       }
       const n = parseInt(raw.replace(/^\+/, ""), 10);
       if(isNaN(n)) return;
-      if(/^-/.test(raw)){                        // damage: temp HP absorbs it first
-        const dmg = -n;
-        const fromTemp = Math.min(c.tempHp, dmg);
-        c.tempHp -= fromTemp;
-        c.hp = Math.max(0, c.hp - (dmg - fromTemp));
-        logEvent("damage", c.name + " took " + dmg + " damage" +
-          (fromTemp ? " (" + fromTemp + " soaked by temp HP)" : "") +
-          " · " + before + " → " + c.hp);
-        pendingFloat = {id:c.id, text:"-" + dmg, kind:"dmg"};
+      if(/^-/.test(raw)){
+        applyDamage(c, -n, null);
+        return;
       } else if(/^\+/.test(raw)){
         c.hp = clamp(c.hp + n, 0, c.maxHp);
         logEvent("heal", c.name + " healed " + (c.hp - before) + " · " + before + " → " + c.hp);
-        pendingFloat = {id:c.id, text:"+" + (c.hp - before), kind:"heal"};
+        pendingFloats.push({id:c.id, text:"+" + (c.hp - before), kind:"heal"});
       } else {
         c.hp = clamp(n, 0, c.maxHp);
         logEvent("heal", c.name + "'s HP set to " + c.hp + " / " + c.maxHp);
@@ -2381,6 +2493,20 @@ unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304
       if(before > 0 && c.hp === 0) logEvent("down", c.name + " is down at 0 HP");
       else if(before === 0 && c.hp > 0) logEvent("heal", c.name + " is back up at " + c.hp + " HP");
     });
+  }
+
+  /* Damage from either the health bar or the attack dialog. Temp HP absorbs it
+     first, as the rules have it. `by` names the attacker, when there is one. */
+  function applyDamage(c, dmg, by){
+    const before = c.hp;
+    const fromTemp = Math.min(c.tempHp, dmg);
+    c.tempHp -= fromTemp;
+    c.hp = Math.max(0, c.hp - (dmg - fromTemp));
+    logEvent("damage", (by ? by + " hit " + c.name + " for " + dmg : c.name + " took " + dmg + " damage") +
+      (fromTemp ? " (" + fromTemp + " soaked by temp HP)" : "") +
+      (c.maxHp ? " · " + before + " → " + c.hp : ""));
+    pendingFloats.push({id:c.id, text:"-" + dmg, kind:"dmg"});
+    if(before > 0 && c.hp === 0) logEvent("down", c.name + " is down at 0 HP");
   }
 
   /* ---------------- drag to reorder ---------------- */
@@ -2522,6 +2648,7 @@ unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304
         if(state.round === 0) state.round = 1;   // tapping someone also starts the fight
         const who = state.combatants.find(o => o.id === state.activeId);
         if(who) logEvent("turn", "Turn jumped to " + who.name);
+        state.turnDirty = false;
         save();
       }
       render();
@@ -2563,6 +2690,7 @@ unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304
       state.round = 1;
       state.activeId = list[0].id;
       logEvent("system", "Battle begins — " + list[0].name + " acts first");
+      state.turnDirty = false;
       save(); render(); scrollToActive();
       return;
     }
@@ -2577,6 +2705,7 @@ unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304
         if(state.round <= 1){                  // stepping back off the top un-starts the battle
           state.round = 0; state.activeId = null;
           logEvent("system", "Battle reset to round 0");
+          state.turnDirty = false;
           save(); render();
           return;
         }
@@ -2586,7 +2715,22 @@ unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304
     state.activeId = list[i].id;
     logEvent("turn", dir > 0 ? list[i].name + "'s turn"
                              : "Stepped back to " + list[i].name + "'s turn");
+    // after the ticks above, which log, so a condition wearing off is not an action
+    state.turnDirty = false;
     save(); render(); scrollToActive();
+  }
+
+  /* Finish turn: the one way forward once a battle is running. A turn where
+     nothing was logged is more likely a missed click than a choice, so it asks. */
+  function finishTurn(){
+    const a = state.combatants.find(c => c.id === state.activeId);
+    if(state.round === 0 || !a || state.turnDirty) return step(1);
+    askConfirm("Skip turn",
+      a.name + " hasn't done anything this turn. Skip to the next combatant?",
+      "Skip turn", () => {
+        logEvent("turn", a.name + " skipped their turn");
+        step(1);
+      });
   }
 
   function scrollToActive(){
@@ -2945,6 +3089,88 @@ unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304
     openPicker(D.icon, v => { dlgIcon = v; syncDlgIcon(); });
   });
   els.dlg.addEventListener("click", e => { if(e.target === els.dlg) closeDialog(); });
+
+  /* ---------------- attack dialog ----------------
+     One attack from whoever is up: a damage number applied to every ticked
+     target, plus any conditions it inflicts. Everything is applied together and
+     saved once, so a single undo takes back the whole attack. */
+  const atkEl = $("#atk");
+  let atkConds = [];
+
+  const atkTargets = () => [...$("#atk-targets").querySelectorAll(".atk-row")]
+    .filter(row => row.querySelector("input[type=checkbox]").checked);
+
+  function atkSync(){
+    const dmg = $("#atk-dmg").value.trim();
+    [...$("#atk-targets").querySelectorAll(".atk-row")].forEach(row =>
+      row.classList.toggle("on", row.querySelector("input[type=checkbox]").checked));
+    $("#atk-go").disabled = !atkTargets().length || (dmg === "" && !atkConds.length);
+  }
+
+  function openAttack(){
+    const a = state.combatants.find(c => c.id === state.activeId);
+    if(!a) return;
+    $("#atk-title").textContent = "Attack: " + a.name;
+    $("#atk-dmg").value = "";
+    const box = $("#atk-targets");
+    box.innerHTML = "";
+    state.combatants.filter(c => c.id !== a.id).forEach(c => {
+      const row = document.createElement("label");
+      row.className = "set-row party-row atk-row" + (c.maxHp > 0 && c.hp <= 0 ? " down" : "");
+      row.dataset.id = c.id;
+      row.innerHTML = '<input type="checkbox"><i class="face"></i>' +
+        '<span class="who"><b>' + esc(c.name) + '</b><small>' +
+        esc((c.maxHp ? c.hp + " / " + c.maxHp + " HP" : "No HP set") + (c.ac ? " · AC " + c.ac : "")) +
+        '</small></span>';
+      fillFace(row, c);
+      row.dataset.type = c.type;
+      row.querySelector("input").addEventListener("change", atkSync);
+      box.appendChild(row);
+    });
+    if(!box.children.length) box.innerHTML = '<div class="empty">There is no one else on the board to attack.</div>';
+    atkConds = [];
+    renderCondList($("#atk-conds"), {conds:atkConds}, atkSync);
+    atkSync();
+    atkEl.classList.remove("hidden");
+    $("#atk-dmg").focus();
+  }
+
+  function closeAttack(){ atkEl.classList.add("hidden"); atkConds = []; }
+
+  function commitAttack(){
+    const a = state.combatants.find(c => c.id === state.activeId);
+    const rows = atkTargets();
+    if(!a || !rows.length || $("#atk-go").disabled) return;
+    const raw = $("#atk-dmg").value.trim();
+    const dmg = raw === "" ? null : Math.max(0, parseInt(raw, 10) || 0);
+    rows.forEach(row => {
+      const t = state.combatants.find(c => c.id === row.dataset.id);
+      if(!t) return;
+      if(dmg > 0) applyDamage(t, dmg, a.name);
+      else if(dmg === 0){
+        logEvent("damage", a.name + " attacked " + t.name + " and missed");
+        pendingFloats.push({id:t.id, text:"Miss", kind:"miss"});
+      }
+      // a condition the target already has takes the new duration
+      atkConds.forEach(x => {
+        const have = t.conds.find(y => y.k === x.k);
+        if(have) have.n = x.n; else t.conds.push({k:x.k, n:x.n});
+        logEvent("cond", t.name + " is now " + COND[x.k].n + (x.n > 0 ? " (" + x.n + ")" : ""));
+      });
+    });
+    closeAttack();
+    save(); render();
+  }
+
+  $("#atk-dmg").addEventListener("input", atkSync);
+  $("#atk-dmg").addEventListener("keydown", e => {
+    e.stopPropagation();
+    if(e.key === "Enter") commitAttack();
+    if(e.key === "Escape") closeAttack();
+  });
+  $("#atk-go").addEventListener("click", commitAttack);
+  $("#atk-cancel").addEventListener("click", closeAttack);
+  atkEl.addEventListener("click", e => { if(e.target === atkEl) closeAttack(); });
 
   /* ---------------- icon picker ---------------- */
   let pickerCb = null;
@@ -3691,7 +3917,9 @@ unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304
   });
   $("#btn-undo").addEventListener("click", e => { e.currentTarget.blur(); undo(); });
   $("#btn-redo").addEventListener("click", e => { e.currentTarget.blur(); redo(); });
-  $("#btn-next").addEventListener("click", e => { e.currentTarget.blur(); step(1); });
+  $("#btn-next").addEventListener("click", e => { e.currentTarget.blur(); finishTurn(); });
+  $("#btn-finish").addEventListener("click", e => { e.currentTarget.blur(); finishTurn(); });
+  $("#btn-attack").addEventListener("click", e => { e.currentTarget.blur(); openAttack(); });
   $("#btn-prev").addEventListener("click", e => { e.currentTarget.blur(); step(-1); });
   $("#btn-add").addEventListener("click", addCombatants);
   $("#btn-roll").addEventListener("click", () => {
@@ -3712,6 +3940,7 @@ unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304
         sortByInit();
         state.round = 0;
         state.activeId = null;
+        state.turnDirty = false;
         logEvent("system", "Initiative rerolled for everyone — back to round 0");
         save(); render(); maybeAskTies(null);
       });
@@ -3733,6 +3962,7 @@ unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304
         state.round = 0;
         state.activeId = null;
         state.log = [];                       // a fresh fight starts with a fresh log
+        state.turnDirty = false;
         logEvent("system", "New battle — everyone restored to full HP with fresh initiative");
         save(); render(); maybeAskTies(null);
       });
@@ -3961,6 +4191,7 @@ unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304
   });
 
   const modalOpen = () => !els.dlg.classList.contains("hidden") ||
+                          !atkEl.classList.contains("hidden") ||
                           !els.tie.classList.contains("hidden") ||
                           !$("#ask").classList.contains("hidden") ||
                           settingsOpen() || addOpen();
@@ -3980,6 +4211,7 @@ unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304
       if(!$("#ask").classList.contains("hidden")) return closeAsk();
       if(settingsOpen()) return closeSettings();
       if(addOpen()) return closeAdd();
+      if(!atkEl.classList.contains("hidden")) return closeAttack();
       if(!els.dlg.classList.contains("hidden")) return closeDialog();
       if(!els.tie.classList.contains("hidden")){ tieQueue = []; els.tie.classList.add("hidden"); }
       // last rung: a sub-screen steps back to the menu. The menu itself is the
@@ -3993,7 +4225,7 @@ unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304
     if(!onTrack()) return;   // only the tracker steps turns on Space and the arrows
     const t = e.target;
     if(t && (t.tagName === "INPUT" || t.tagName === "SELECT" || t.tagName === "TEXTAREA")) return;
-    if(e.key === " " || e.key === "ArrowRight"){ e.preventDefault(); step(1); }
+    if(e.key === " " || e.key === "ArrowRight"){ e.preventDefault(); finishTurn(); }
     else if(e.key === "ArrowLeft"){ e.preventDefault(); step(-1); }
   });
 
