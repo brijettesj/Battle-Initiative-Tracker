@@ -32,7 +32,12 @@ Note that each device keeps its own battle — a fight set up on a laptop won't 
 
 **Rounds and turns**
 - The fight sits at **Round 0** until you press *Start Battle*. Both reset buttons return you there.
-- `Space` or `→` advances the turn, `←` steps back. The round counter advances on its own.
+- Once the battle starts, whoever is up takes a spotlight above the order, drawn larger, with two
+  buttons under it: **Attack** and **Finish turn**.
+- *Attack* asks how much damage was done, who took it (tick several for an area spell) and any
+  conditions it inflicts. `0` records a miss. The whole attack is one undo step.
+- *Finish turn*, `Space` or `→` moves to the next combatant. If nothing happened during the turn it
+  asks before skipping. `←` steps back. The round counter advances on its own.
 
 **Health**
 - Click a health bar and type `-7` for damage, `+4` for healing, `22` to set it exactly, or `t8` to
