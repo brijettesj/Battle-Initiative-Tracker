@@ -42,12 +42,13 @@
 
   <h1>Privacy Policy</h1>
   <p class="sub">Roll Initiative — A Dungeon Battle Tracker</p>
-  <p class="date">Last updated 4 September 2026</p>
+  <p class="date">Last updated 14 September 2026</p>
 
   <div class="box">
-    <p><strong>The short version.</strong> Roll Initiative does not collect, transmit or store any
-      personal information. Everything you enter stays on your own device. There is no account, no
-      sign-in, no analytics and no advertising.</p>
+    <p><strong>The short version.</strong> Roll Initiative does not collect any personal information.
+      Everything you enter stays on your own device, unless you open or join a room, which shares the
+      battle with the other people at your table until the room is closed. There is no account, no
+      analytics and no advertising.</p>
   </div>
 
   <h2>What the app stores</h2>
@@ -60,29 +61,50 @@
     <li>The battle log for the current encounter</li>
     <li>Your settings, such as text size and accent colour</li>
   </ul>
-  <p>All of it is written to storage on the device the app is running on. <strong>None of it is
-    transmitted anywhere, and the developer cannot see any of it.</strong> Uninstalling the app, or
-    clearing its data, deletes it permanently.</p>
+  <p>All of it is written to storage on the device the app is running on. <strong>Outside a room,
+    none of it is transmitted anywhere, and the developer cannot see any of it.</strong> Uninstalling
+    the app, or clearing its data, deletes it permanently.</p>
+
+  <h2>Rooms</h2>
+  <p>A room lets players follow a battle on their own devices. It is only used if you choose to open
+    or join one. While a room is open:</p>
+  <ul>
+    <li>The battle on the Dungeon Master's device is copied to a Google Firebase Realtime Database so
+      the players' devices can show it. That copy holds the names, sprites and portraits, initiative,
+      conditions and the turn and round. Players and allies include their hit points and armour class.
+      Enemies include only a description of how hurt they are. Notes and damage entries in the log
+      are not copied.</li>
+    <li>What a player does in the room (an attack, finishing a turn, a change to their hit points) is
+      sent to the Dungeon Master's device through the same database.</li>
+    <li>Each device signs in to an anonymous Firebase account, a random identifier with no name, email
+      address or other detail attached, so the database can tell which device may change what.</li>
+  </ul>
+  <p>Google processes this data to run the database, and its servers see each device's IP address,
+    as with any web request. Anyone who has the room code can view the room. Closing the room deletes
+    it from the database, and a room left open can be taken over by a new one after a day.</p>
 
   <h2>What the app does not do</h2>
   <ul>
-    <li>It does not ask you to create an account or sign in</li>
+    <li>It does not ask you to create an account or sign in (a room's anonymous account is created
+      without asking you for anything)</li>
     <li>It does not collect your name, email address, phone number or location</li>
     <li>It does not use analytics, tracking, advertising or crash reporting</li>
     <li>It does not contain third-party advertising or tracking software</li>
-    <li>It does not share, sell or disclose anything to anyone, because it holds nothing to share</li>
+    <li>It does not share, sell or disclose anything to anyone, beyond the room data described above
+      that you choose to share with your own table</li>
   </ul>
 
   <h2>Network access</h2>
   <p>The app is built to work with no internet connection at all, and does not need one to run. There
-    is exactly one optional exception.</p>
+    are two optional exceptions: rooms, described above, which use the internet only while you are in
+    one, and the icon setting below.</p>
   <p>In Settings, the <strong>Icons</strong> option can be switched from "This device" to "Universal",
     which draws every portrait from one shared emoji set so the app looks the same on every device.
     Choosing "Universal" downloads that font once from Google Fonts. That request tells Google's
     servers your device's IP address, as any web request would. It happens only if you choose that
     setting, the font is cached afterwards, and no information about you or your encounters is sent
-    with it. Leaving the setting on "This device", which is the default, means the app makes no
-    network requests whatsoever.</p>
+    with it. Leaving the setting on "This device", which is the default, and staying out of rooms
+    means the app makes no network requests whatsoever.</p>
 
   <h2>Children</h2>
   <p>Roll Initiative is a utility for tabletop roleplaying games and is not directed at children. It
@@ -91,7 +113,7 @@
   <h2>Permissions</h2>
   <p>The app requests no runtime permissions. If you choose to set a custom portrait, your device
     will ask you to pick an image; that image is copied into the app's own storage on your device and
-    goes nowhere else.</p>
+    goes nowhere else, unless that character is on the board while a room is open.</p>
 
   <h2>Changes to this policy</h2>
   <p>If a future version of the app collects or transmits anything, this page will be updated before

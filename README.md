@@ -68,6 +68,18 @@ Note that each device keeps its own battle — a fight set up on a laptop won't 
 - *Behaviour* holds the tie prompts, the help text, the battle log rail and a reduce-motion switch.
 - Every setting is remembered on the device, and undo never rolls one back.
 
+**Rooms** — players follow the battle on their own devices
+- The DM presses *Room* on the tracker, then *Open a room*, and reads out the five-character code.
+- Players choose *Join Room* on the menu, or open `…/Battle-Initiative-Tracker/?room=CODE`, type the
+  code and pick their character. Each character can only be picked by one device.
+- On their own character's turn a player can *Attack* and *Finish turn*, and at any time they can
+  type into their own health bar. Everything else is read-only on their device.
+- Players see exact numbers for players and allies, but enemies only as *Unhurt*, *Wounded*,
+  *Bloodied*, *Near death* or *Down*. The DM's notes and damage lines in the log are not sent.
+- The DM's device stays in charge: a player's action is applied there, so it shows in the DM's log
+  and undo takes it back. A reload on either side picks the room back up. *Close room* ends it.
+- Rooms stay hidden until Firebase is set up; see [Multiplayer rooms](#multiplayer-rooms) below.
+
 **Testing**
 - Open `index.html?demo` to replace the board with a sample party and monsters at round 0, plus a
   sample campaign. The `?demo` is dropped from the address once loaded, so a reload keeps the fight.
@@ -84,9 +96,60 @@ Note that each device keeps its own battle — a fight set up on a laptop won't 
 | `logos/` | Source artwork. `ICON ONLY` is the splash mark, `ICON - TWO LINER` the full logo. |
 | `resources/` | The two source images every launcher and store size is generated from. |
 | `web/` | Manifest, service worker and icons that make `www/` installable from a browser. |
+| `firebase/` | Security rules for the Realtime Database that rooms run on. |
+| `dev/` | `rooms-server.js`, a local stand-in for Firebase for testing rooms (`npm run rooms:dev`). |
 | `android/` | The native Android project, committed so an update builds on what shipped. |
 | `ios/` | The native Xcode project. Created on a Mac, then committed, like `android/`. |
 | `prototypes/` | Visual studies of the interface. Nothing here is built, packaged or deployed. |
+
+## Multiplayer rooms
+
+Rooms run on a free [Firebase](https://firebase.google.com) project, reached through its REST API
+and event stream, so no SDK is added to `index.html`. Until the project's details are filled in,
+the *Room* button and the *Join Room* banner stay hidden and the app makes no requests.
+
+1. Create a Firebase project. Add a **Realtime Database** to it (locked mode is fine, the rules
+   below replace it).
+2. Under **Authentication → Sign-in method**, turn on **Anonymous**.
+3. Replace the database rules with the contents of `firebase/database.rules.json`, either by pasting
+   them into the console's *Rules* tab or with `firebase deploy --only database`.
+4. Under **Project settings → General**, add a web app to get its API key. The key is not a secret:
+   access is controlled by the rules.
+5. In `index.html`, fill in `ROOMS_CFG` in the rooms section with the database URL
+   (`https://<project>-default-rtdb.<region>.firebasedatabase.app` or
+   `https://<project>-default-rtdb.firebaseio.com`) and the API key.
+
+How it fits together: the DM's device writes a copy of the board to `rooms/CODE/view` after every
+save, with enemy numbers, notes and damage lines taken out, and portraits written once each to
+`rooms/CODE/art`. Players' devices stream that copy. What a player does is written to
+`rooms/CODE/actions`, and the DM's device checks it (right character, right turn) before applying it.
+Which device plays which character is in `rooms/CODE/claims`. The rules let only the device that
+opened a room change it, let anyone signed in claim a free character or send an action, and let a
+code be reused once its room is a day old.
+
+**Testing without a Firebase project.** `npm run rooms:dev` starts a local server that serves the
+app and stands in for Firebase, all in memory. It prints two addresses:
+
+- On the DM's device, open the Wi-Fi address with `?roomsdev&demo` (for example
+  `http://192.168.1.20:8787/?roomsdev&demo`), which also loads the sample battle. Then press
+  *Resume Battle* and *Room*. Using the Wi-Fi address rather than `localhost` makes the room's join
+  link work on phones.
+- On each phone on the same Wi-Fi, open the same address with `?roomsdev`, choose *Join Room* and
+  type the code.
+
+`?roomsdev` is remembered by that browser, so after the first visit the plain address is enough.
+`?roomsdev=off` turns it back off. On one computer, two tabs on the same address share an identity,
+so use `localhost` in one and `127.0.0.1` in the other. The server copies the security rules by
+hand, so once a real project exists, try the rules there too. If the Mac asks whether Node may
+accept incoming connections, allow it, or phones cannot reach the server.
+
+To use the Firebase emulators instead, run this in the browser console and reload:
+
+```js
+localStorage.setItem("dnd-rooms-dev", JSON.stringify({
+  db: "http://127.0.0.1:9000/?ns=<project>", key: "any", auth: "http://127.0.0.1:9099"
+}));
+```
 
 ## Building the mobile app
 

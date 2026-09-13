@@ -667,11 +667,13 @@ unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304
   body[data-screen="menu"]  #scr-menu,
   body[data-screen="chars"] #scr-chars,
   body[data-screen="load"]  #scr-load,
-  body[data-screen="enc"]   #scr-enc{display:block}
+  body[data-screen="enc"]   #scr-enc,
+  body[data-screen="room"]  #scr-room{display:block}
   body[data-screen="menu"]  .wrap,
   body[data-screen="chars"] .wrap,
   body[data-screen="load"]  .wrap,
-  body[data-screen="enc"]   .wrap{display:none}
+  body[data-screen="enc"]   .wrap,
+  body[data-screen="room"]  .wrap{display:none}
 
   .screen{
     max-width:1460px;margin:0 auto;
@@ -1052,7 +1054,8 @@ unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304
     body[data-screen="menu"]  .fab,
     body[data-screen="chars"] .fab,
     body[data-screen="load"]  .fab,
-    body[data-screen="enc"]   .fab{display:none}
+    body[data-screen="enc"]   .fab,
+    body[data-screen="room"]  .fab{display:none}
     /* keep the install offer clear of the floating button */
     #install{bottom:calc(96px + env(safe-area-inset-bottom))}
 
@@ -1117,6 +1120,57 @@ unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304
     .lobby-pips i{display:block;width:10px;height:10px;background:var(--edge-dim)}
     .lobby-pips i.on{background:var(--gold)}
   }
+
+  /* ---------- rooms ----------
+     A room shares the DM's board with the players' devices. The Room button
+     carries the code, so the DM can read it out without opening anything, and
+     a dot for the connection. */
+  #btn-room .code{font-family:var(--ui);letter-spacing:2px}
+  .room-dot{display:inline-block;width:8px;height:8px;margin-right:8px;background:var(--dim);vertical-align:1px}
+  .room-dot[data-s="live"]{background:var(--moss)}
+  .room-dot[data-s="wait"]{background:var(--gold);animation:blink .9s steps(1,end) infinite}
+  .room-dot[data-s="off"]{background:var(--blood-lit)}
+  body.calm .room-dot{animation:none}
+  .room-dot[hidden]{display:none}
+  .room-code{
+    font-family:var(--ui);font-size:clamp(30px, 11vw, 48px);letter-spacing:8px;text-align:center;
+    color:var(--flame);text-shadow:4px 4px 0 var(--blood), 6px 6px 0 #000;margin:10px 0 4px;
+  }
+  .room-link{text-align:center;font-size:18px;color:var(--dim);word-break:break-all;margin:0 0 6px}
+  #scr-room .code-in{
+    width:100%;text-align:center;text-transform:uppercase;
+    font-family:var(--ui);font-size:26px;letter-spacing:10px;padding:16px 8px;
+  }
+  .room-msg{margin:12px 0 0;font-size:18px;color:var(--flame)}
+  .room-msg:empty{display:none}
+  .party-row.taken{opacity:.45}
+  .party-row .tag{font-family:var(--ui);font-size:8px;text-transform:uppercase;color:var(--dim);white-space:nowrap}
+  /* .panel and .stage-actions set a display, which would beat the hidden attribute */
+  #btn-room[hidden],#room-host[hidden],#room-open[hidden],#room-player[hidden],#jr-pick[hidden],.stage-actions[hidden]{display:none}
+  .stage-wait{font-family:var(--ui);font-size:9px;text-transform:uppercase;letter-spacing:1px;color:var(--dim);text-align:center}
+  .stage-wait[hidden]{display:none}
+  @media (max-width:640px){
+    #btn-room .word{display:none}
+  }
+
+  /* A player's device shows the DM's board but none of the DM's tools. Their own
+     turn's buttons and their own health bar are switched on by the script. */
+  body[data-role="player"] #btn-undo,
+  body[data-role="player"] #btn-redo,
+  body[data-role="player"] #btn-prev,
+  body[data-role="player"] #btn-next,
+  body[data-role="player"] #log-clear,
+  body[data-role="player"] header .sub,
+  #ask-no[hidden],
+  body[data-role="player"] .corner-btn,
+  body[data-role="player"] .cond-row .add,
+  body[data-role="player"] .fab,
+  body[data-role="player"] #add-panel{display:none}
+  body[data-role="player"] .card,
+  body[data-role="player"] .init-badge,
+  body[data-role="player"] .cond-row,
+  body[data-role="player"] .hp{cursor:default}
+  body[data-role="player"] .hp.mine{cursor:pointer}
 </style>
 </head>
 <!-- data-screen is set here, not from script, so the tracker never flashes
@@ -1201,6 +1255,8 @@ unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304
     <button type="button" id="btn-undo" class="btn-hist" title="Nothing to undo">↶</button>
     <button type="button" id="btn-redo" class="btn-hist" title="Nothing to redo">↷</button>
     <div class="spacer"></div>
+    <!-- shown only when rooms are set up; the label becomes the room code -->
+    <button type="button" id="btn-room" class="btn-sm" title="Share this battle with the players' devices" hidden><span class="room-dot" hidden></span><span class="lbl">Room</span></button>
     <button type="button" id="btn-menu" class="btn-sm btn-ghost" title="Back to the main menu"><span class="sym">☰</span><span class="lbl"> Menu</span></button>
     <button type="button" id="btn-help" class="btn-sm btn-ghost"><span class="sym">✕</span> Hide help</button>
     <button type="button" id="btn-settings" class="btn-sm" title="Settings"><span class="sym">⚙</span><span class="lbl"> Settings</span></button>
@@ -1227,6 +1283,8 @@ unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304
       <button type="button" id="btn-attack" class="btn-blood btn-big"><span class="sym">⚔</span> Attack</button>
       <button type="button" id="btn-finish" class="btn-big">Finish turn <span class="sym">→</span></button>
     </div>
+    <!-- a player's device, when it is someone else's turn -->
+    <div class="stage-wait" id="stage-wait" hidden></div>
   </div>
 
   <div class="track-shell">
@@ -1394,6 +1452,10 @@ unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304
           <button type="button" id="m-quick" class="menu-btn" data-banner="quick" data-emblem="hourglass">
             <span class="flag-art"></span>
             <span class="flag-text"><b>Quick Play</b><small>Straight to the tracker.</small></span>
+          </button>
+          <button type="button" id="m-join" class="menu-btn" data-banner="join" data-emblem="key" hidden>
+            <span class="flag-art"></span>
+            <span class="flag-text"><b>Join Room</b><small>Enter the code from your DM.</small></span>
           </button>
         </div>
         <button type="button" class="lobby-arrow" id="m-next" aria-label="Next choice">▶</button>
@@ -1568,6 +1630,38 @@ unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304
   </div>
 </div>
 
+<!-- ---------- join a room ---------- -->
+<div class="screen" id="scr-room">
+  <div class="screen-in">
+    <div class="screen-head">
+      <h1>Join Room</h1>
+      <span class="tagline">Follow the battle on your own device</span>
+    </div>
+
+    <div class="panel">
+      <h2>Room code</h2>
+      <input type="text" id="jr-code" class="code-in" maxlength="5" placeholder="ABCDE"
+             autocomplete="off" autocapitalize="characters" spellcheck="false" aria-label="Room code">
+      <div class="toolbar">
+        <div class="spacer"></div>
+        <button type="button" id="jr-go" class="btn-blood">Join <span class="sym">→</span></button>
+      </div>
+      <p class="room-msg" id="jr-msg"></p>
+    </div>
+
+    <div class="panel" id="jr-pick" hidden>
+      <h2>Who are you?</h2>
+      <div class="party-list" id="jr-list"></div>
+      <p class="set-note">Pick your character to take your own turns: attack, finish your turn and change your hit points. Watching only shows the battle.</p>
+    </div>
+
+    <div class="modal-foot">
+      <button type="button" id="jr-back" class="btn-ghost"><span class="sym">←</span> Menu</button>
+      <div class="spacer"></div>
+    </div>
+  </div>
+</div>
+
 <!-- sprite / image picker -->
 <div id="picker" class="pop hidden">
   <div class="pop-head">Choose a sprite</div>
@@ -1670,7 +1764,9 @@ unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304
       <div class="set-lbl">About</div>
       <p class="set-note">
         <b>Roll Initiative</b><br>A Dungeon Battle Tracker · version 1.0.0<br>
-        Everything you enter stays on this device. Nothing is sent anywhere, and there is no account.<br>
+        Everything you enter stays on this device, and there is no account. The one exception is a
+        room: while one is open, the board is shared with the players through Google Firebase, and the
+        room is deleted when it closes.<br>
         Rules references come from the System Reference Document 5.1, used under the Creative Commons
         Attribution 4.0 International licence. Not affiliated with or endorsed by any game publisher.
       </p>
@@ -1679,6 +1775,52 @@ unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304
     <div class="modal-foot">
       <div class="spacer"></div>
       <button type="button" id="set-done" class="btn-blood">Done</button>
+    </div>
+  </div>
+</div>
+
+<!-- the room: the DM opens and runs it here, a player sees who they are and leaves -->
+<div id="room" class="overlay hidden">
+  <div class="modal" style="max-width:520px">
+    <h2>Room</h2>
+
+    <section class="set-grp" id="room-open">
+      <p class="set-note" style="margin-top:0">Open a room and the players can follow this battle on their own
+        phones. They choose Join Room on the menu and type the code. When it is their character's turn they
+        can attack and finish the turn themselves, and they can change their own hit points.
+        Enemies only show how hurt they look, never their exact numbers.</p>
+      <div class="modal-foot">
+        <div class="spacer"></div>
+        <button type="button" id="room-start" class="btn-blood">Open a room</button>
+      </div>
+    </section>
+
+    <section class="set-grp" id="room-host" hidden>
+      <div class="set-lbl">Code</div>
+      <div class="room-code" id="room-code"></div>
+      <p class="room-link" id="room-link"></p>
+      <div class="set-lbl" style="margin-top:22px">Players</div>
+      <div class="party-list" id="room-claims"></div>
+      <div class="modal-foot">
+        <button type="button" id="room-close" class="btn-ghost">Close room</button>
+      </div>
+    </section>
+
+    <section class="set-grp" id="room-player" hidden>
+      <div class="set-lbl">Code</div>
+      <div class="room-code" id="room-pcode"></div>
+      <p class="set-note" id="room-who" style="text-align:center"></p>
+      <div class="modal-foot">
+        <button type="button" id="room-leave" class="btn-ghost">Leave room</button>
+        <div class="spacer"></div>
+        <button type="button" id="room-repick">Change character</button>
+      </div>
+    </section>
+
+    <p class="room-msg" id="room-msg"></p>
+    <div class="modal-foot">
+      <div class="spacer"></div>
+      <button type="button" id="room-done">Done</button>
     </div>
   </div>
 </div>
@@ -1888,8 +2030,22 @@ unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304
         battle:null
       });
       localStorage.setItem("dnd-campaigns-v1", JSON.stringify({v:1, list}));
+      // The sample battle is for the DM's side, so this device stops being a
+      // player in any room it had joined (must match ROOM_STORE further down).
+      const inRoom = JSON.parse(localStorage.getItem("dnd-room-v1") || "null");
+      if(inRoom && inRoom.role === "player") localStorage.removeItem("dnd-room-v1");
     }catch(e){ /* blocked storage: the app just opens as normal */ }
-    try{ history.replaceState(null, "", location.pathname + location.hash); }catch(e){}
+    dropParam("demo");
+  }
+
+  /* Takes one query parameter off the address without a reload, leaving any
+     others (?demo, ?room, ?roomsdev) for the code that reads them later. */
+  function dropParam(name){
+    try{
+      const u = new URL(location.href);
+      u.searchParams.delete(name);
+      history.replaceState(null, "", u.pathname + u.search + u.hash);
+    }catch(e){}
   }
 
   /* ---------------- sprites ----------------
@@ -2088,11 +2244,29 @@ unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304
   const HISTORY_CAP = 40;
   let undoStack = [], redoStack = [], lastSnap = null, restoring = false;
 
+  // Preferences ride along in state so they persist, but they belong to the
+  // device rather than to any one fight.
+  const PREFS = ["reduceMotion","emojiFont","askTies","showHelp","showLog"];
+
+  // The open room, if any (see the rooms section). Declared up here because
+  // save() and render() read it, and both can run before that section has.
+  let room = null;
+  const hosting = () => !!room && room.role === "host";
+  const playing = () => !!room && room.role === "player";
+
   const snapshot = () => JSON.stringify(state);
   const topLogLabel = () =>
     (state.log && state.log.length) ? state.log[state.log.length - 1].x : "last change";
 
   function save(mode){
+    // A player's state is the DM's board as last received, so it is never stored
+    // or undone. Only a changed preference is kept, on the battle this device had
+    // before it joined.
+    if(playing()){
+      PREFS.forEach(k => { room.home[k] = state[k]; });
+      try{ localStorage.setItem(STORE, JSON.stringify(room.home)); }catch(e){}
+      return;
+    }
     if(!restoring && mode !== "defer"){
       const now = snapshot();
       if(mode !== "quiet" && lastSnap !== null && now !== lastSnap){
@@ -2104,6 +2278,7 @@ unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304
     }
     try{ localStorage.setItem(STORE, JSON.stringify(state)); }catch(e){}
     updateHistoryButtons();
+    if(hosting()) roomPush();
   }
 
   function updateHistoryButtons(){
@@ -2122,13 +2297,13 @@ unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304
     // the fight — an undo of a hit must not also flip a setting.
     // campaignId is deliberately NOT here: which campaign a fight belongs to is
     // battle data, so undoing a campaign load should restore the old one too.
-    ["reduceMotion","emojiFont","askTies","showHelp","showLog"]
-      .forEach(k => { parsed[k] = state[k]; });
+    PREFS.forEach(k => { parsed[k] = state[k]; });
     restoring = true;
     state = parsed;
     lastSnap = snapshot();
     try{ localStorage.setItem(STORE, JSON.stringify(state)); }catch(e){}
     restoring = false;
+    if(hosting()) roomPush();
     // anything holding a reference into the old state must go
     closeDialog(); closeAsk(); closeAttack(); closeReveal();
     els.picker.classList.add("hidden");
@@ -2141,8 +2316,9 @@ unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304
     return true;
   }
 
+  // The stacks still hold this device's own battle while it is in someone else's room.
   function undo(){
-    if(!undoStack.length) return;
+    if(!undoStack.length || playing()) return;
     const step = undoStack.pop();
     const current = {s:snapshot(), label:step.label};
     if(restoreSnapshot(step.s)) redoStack.push(current);
@@ -2152,7 +2328,7 @@ unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304
   }
 
   function redo(){
-    if(!redoStack.length) return;
+    if(!redoStack.length || playing()) return;
     const step = redoStack.pop();
     const current = {s:snapshot(), label:step.label};
     if(restoreSnapshot(step.s)) undoStack.push(current);
@@ -2348,16 +2524,27 @@ unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304
     els.turnName.style.color = a ? sideColor(a.type) : "var(--dim)";
     els.turnMeta.innerHTML = a ? metaLine(a) : "";
 
-    // the title bar says which campaign is on the board
+    // the title bar says which campaign is on the board; a player's device
+    // only knows the name the DM's device sent
     const camp = state.campaignId && findCampaign(state.campaignId);
-    $("#stage-sub").textContent = camp ? camp.name : "Quick play";
+    // A player's device also says whose it is, so it can never pass for the DM's.
+    const me = playing() && list.find(c => c.id === myCombatantId());
+    $("#stage-sub").textContent = playing()
+      ? "Room " + room.code + " · " + (me ? "playing " + me.name : "watching")
+      : camp ? camp.name : "Quick play";
 
     renderLog();
+    roomChrome();
 
     // The spotlight: whoever is up, drawn large with the turn's two actions
     // under it. The same card stays in the strip below, so the order keeps its context.
+    // On a player's device the actions are only there on that player's own turn.
+    const mine = playing() && !!a && a.id === myCombatantId();
     $("#stage").hidden = !a;
     $("#stage-card").replaceChildren(...(a ? [cardEl(a)] : []));
+    $(".stage-actions").hidden = playing() && !mine;
+    $("#stage-wait").hidden = !playing() || mine;
+    $("#stage-wait").textContent = a ? "Waiting for " + a.name : "";
 
     els.track.innerHTML = "";
     // only a running fight dims everyone who is not up
@@ -2395,6 +2582,7 @@ unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304
     if(c.ac) bits.push('<span class="chip">AC ' + c.ac + '</span>');
     if(c.maxHp) bits.push('<span class="chip">' + c.hp + " / " + c.maxHp + "</span>" +
                           (c.tempHp ? ' <span style="color:var(--player)">+' + c.tempHp + " temp</span>" : ""));
+    else if(c.hs) bits.push('<span class="chip">' + HEALTH[c.hs].n + "</span>");
     if(c.conds.length) bits.push(c.conds.map(x =>
       emo(COND[x.k].e) + " " + COND[x.k].n + (x.n > 0 ? " (" + x.n + ")" : "")).join(", "));
     let out = bits.join(" &nbsp;·&nbsp; ");
@@ -2411,7 +2599,9 @@ unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304
     card.dataset.id = c.id;
     card.dataset.type = c.type;
     if(c.id === state.activeId) card.classList.add("active");
-    if(c.maxHp > 0 && c.hp <= 0) card.classList.add("down");
+    if((c.maxHp > 0 && c.hp <= 0) || c.hs === "down") card.classList.add("down");
+    // on a player's device the board is to look at, apart from their own health
+    const dm = !playing();
 
     const wrap = document.createElement("div");
     wrap.className = "port-wrap";
@@ -2431,8 +2621,8 @@ unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304
     const badge = document.createElement("div");
     badge.className = "init-badge";
     badge.append(tag("Init"), String(c.init));
-    badge.title = "Initiative — click to edit";
-    badge.addEventListener("click", () => editInit(c, badge));
+    badge.title = dm ? "Initiative — click to edit" : "Initiative";
+    if(dm) badge.addEventListener("click", () => editInit(c, badge));
     wrap.appendChild(badge);
 
     if(c.ac > 0){
@@ -2471,9 +2661,9 @@ unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304
     card.appendChild(nm);
 
     card.appendChild(condRow(c));
-    if(c.maxHp > 0) card.appendChild(hpEl(c));
+    if(c.maxHp > 0 || c.hs) card.appendChild(hpEl(c));
 
-    card.addEventListener("pointerdown", e => onPointerDown(e, card));
+    if(dm) card.addEventListener("pointerdown", e => onPointerDown(e, card));
     return card;
   }
 
@@ -2510,15 +2700,54 @@ unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304
       a.textContent = "+ condition";
       row.appendChild(a);
     }
-    row.addEventListener("click", e => { e.stopPropagation(); openCondMenu(c, row); });
+    if(!playing()){
+      row.addEventListener("click", e => { e.stopPropagation(); openCondMenu(c, row); });
+    } else row.title = "";
     return row;
   }
 
   const HP_PIPS = 12;
+
+  /* How hurt an enemy looks. A room sends players this instead of an enemy's
+     numbers; the pips are drawn at a fixed level for each, matching the colours
+     the real numbers would give. */
+  const HEALTH = {
+    full:     {n:"Unhurt",     pips:12, tone:"on"},
+    hurt:     {n:"Wounded",    pips:9,  tone:"on"},
+    bloodied: {n:"Bloodied",   pips:5,  tone:"warn"},
+    dying:    {n:"Near death", pips:2,  tone:"bad"},
+    down:     {n:"Down",       pips:0,  tone:"bad"}
+  };
+  function healthOf(c){
+    if(!(c.maxHp > 0)) return null;
+    const pct = c.hp / c.maxHp;
+    return c.hp <= 0 ? "down" : pct <= 0.25 ? "dying" : pct <= 0.5 ? "bloodied" : pct < 1 ? "hurt" : "full";
+  }
+
   function hpEl(c){
     const wrap = document.createElement("div");
     wrap.className = "hp";
-    wrap.title = "Click, then type -7  ·  +4  ·  22  ·  t8";
+
+    if(!c.maxHp && c.hs){
+      const h = HEALTH[c.hs];
+      const bar = document.createElement("div");
+      bar.className = "hp-pips";
+      for(let i = 0; i < HP_PIPS; i++){
+        const p = document.createElement("i");
+        p.className = "pip" + (i < h.pips ? " " + h.tone : "");
+        bar.appendChild(p);
+      }
+      const txt = document.createElement("div");
+      txt.className = "hp-txt";
+      txt.textContent = h.n;
+      wrap.append(bar, txt);
+      return wrap;
+    }
+
+    // a player may edit only their own character's health, and does it through the DM
+    const editable = !playing() || c.id === myCombatantId();
+    if(playing() && editable) wrap.classList.add("mine");
+    if(editable) wrap.title = "Click, then type -7  ·  +4  ·  22  ·  t8";
 
     // HP as a row of pips. Anyone still standing shows at least one, so a
     // sliver of health never reads as down; temp HP takes the empty pips after.
@@ -2542,7 +2771,7 @@ unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304
       (c.tempHp > 0 ? ' <span class="tmp">+' + c.tempHp + "</span>" : "");
     wrap.appendChild(txt);
 
-    wrap.addEventListener("click", e => { e.stopPropagation(); editHp(c, wrap); });
+    if(editable) wrap.addEventListener("click", e => { e.stopPropagation(); editHp(c, wrap); });
     return wrap;
   }
 
@@ -2580,36 +2809,42 @@ unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304
     });
   }
 
+  /* A player's device sends what was typed to the DM's device, which applies it. */
   function editHp(c, wrap){
     if(wrap.querySelector("input")) return;
     inlineInput(wrap, "", "-7 +4 22 t8", raw => {
-      raw = raw.trim();
-      if(!raw) return;
-      const before = c.hp;
-      if(/^t/i.test(raw)){                       // t8 → grant 8 temporary HP
-        const n = parseInt(raw.slice(1), 10);
-        if(isNaN(n)) return;
-        c.tempHp = Math.max(0, n);
-        logEvent("temp", c.name + " gained " + c.tempHp + " temporary HP");
-        pendingFloats.push({id:c.id, text:"+" + c.tempHp + " temp", kind:"temp"});
-        return;
-      }
-      const n = parseInt(raw.replace(/^\+/, ""), 10);
-      if(isNaN(n)) return;
-      if(/^-/.test(raw)){
-        applyDamage(c, -n, null);
-        return;
-      } else if(/^\+/.test(raw)){
-        c.hp = clamp(c.hp + n, 0, c.maxHp);
-        logEvent("heal", c.name + " healed " + (c.hp - before) + " · " + before + " → " + c.hp);
-        pendingFloats.push({id:c.id, text:"+" + (c.hp - before), kind:"heal"});
-      } else {
-        c.hp = clamp(n, 0, c.maxHp);
-        logEvent("heal", c.name + "'s HP set to " + c.hp + " / " + c.maxHp);
-      }
-      if(before > 0 && c.hp === 0) logEvent("down", c.name + " is down at 0 HP");
-      else if(before === 0 && c.hp > 0) logEvent("heal", c.name + " is back up at " + c.hp + " HP");
+      if(playing()){ if(raw.trim()) roomSend({t:"hp", raw:raw.trim().slice(0, 12)}); }
+      else applyHpInput(c, raw);
     });
+  }
+
+  function applyHpInput(c, raw){
+    raw = raw.trim();
+    if(!raw) return;
+    const before = c.hp;
+    if(/^t/i.test(raw)){                       // t8 → grant 8 temporary HP
+      const n = parseInt(raw.slice(1), 10);
+      if(isNaN(n)) return;
+      c.tempHp = Math.max(0, n);
+      logEvent("temp", c.name + " gained " + c.tempHp + " temporary HP");
+      pendingFloats.push({id:c.id, text:"+" + c.tempHp + " temp", kind:"temp"});
+      return;
+    }
+    const n = parseInt(raw.replace(/^\+/, ""), 10);
+    if(isNaN(n)) return;
+    if(/^-/.test(raw)){
+      applyDamage(c, -n, null);
+      return;
+    } else if(/^\+/.test(raw)){
+      c.hp = clamp(c.hp + n, 0, c.maxHp);
+      logEvent("heal", c.name + " healed " + (c.hp - before) + " · " + before + " → " + c.hp);
+      pendingFloats.push({id:c.id, text:"+" + (c.hp - before), kind:"heal"});
+    } else {
+      c.hp = clamp(n, 0, c.maxHp);
+      logEvent("heal", c.name + "'s HP set to " + c.hp + " / " + c.maxHp);
+    }
+    if(before > 0 && c.hp === 0) logEvent("down", c.name + " is down at 0 HP");
+    else if(before === 0 && c.hp > 0) logEvent("heal", c.name + " is back up at " + c.hp + " HP");
   }
 
   /* Damage from either the health bar or the attack dialog. Temp HP absorbs it
@@ -2841,6 +3076,13 @@ unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304
      nothing was logged is more likely a missed click than a choice, so it asks. */
   function finishTurn(){
     const a = state.combatants.find(c => c.id === state.activeId);
+    // a player can only end their own turn, and the DM's device does the moving
+    if(playing()){
+      if(!a || state.round === 0 || a.id !== myCombatantId()) return;
+      if(state.turnDirty) return roomSend({t:"finish"});
+      return askConfirm("Skip turn", "You haven't done anything this turn. Skip it?",
+        "Skip turn", () => roomSend({t:"finish"}));
+    }
     if(state.round === 0 || !a || state.turnDirty) return step(1);
     askConfirm("Skip turn",
       a.name + " hasn't done anything this turn. Skip to the next combatant?",
@@ -2998,6 +3240,8 @@ unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304
     $("#ask-title").textContent = title;
     $("#ask-say").textContent = message;
     $("#ask-yes").textContent = yesLabel;
+    // with nothing to confirm it is only a notice, so there is nothing to cancel
+    $("#ask-no").hidden = !cb;
     askCb = cb;
     $("#ask").classList.remove("hidden");
     $("#ask-yes").focus();
@@ -3270,14 +3514,14 @@ unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304
     box.innerHTML = "";
     state.combatants.filter(c => c.id !== a.id).forEach(c => {
       const row = document.createElement("div");
-      row.className = "set-row party-row atk-row" + (c.maxHp > 0 && c.hp <= 0 ? " down" : "");
+      row.className = "set-row party-row atk-row" + ((c.maxHp > 0 && c.hp <= 0) || c.hs === "down" ? " down" : "");
       row.dataset.id = c.id;
       row.dataset.type = c.type;
       // the label wraps only the tick and the name, like the encounter roster,
       // so typing into the damage box beside it cannot toggle the tick
       row.innerHTML = '<label class="enc-who"><input type="checkbox"><i class="face"></i>' +
         '<span class="who"><b>' + esc(c.name) + '</b><small>' +
-        esc((c.maxHp ? c.hp + " / " + c.maxHp + " HP" : "No HP set") + (c.ac ? " · AC " + c.ac : "")) +
+        esc((c.maxHp ? c.hp + " / " + c.maxHp + " HP" : c.hs ? HEALTH[c.hs].n : "No HP set") + (c.ac ? " · AC " + c.ac : "")) +
         '</small></span></label>' +
         '<span class="atk-share" hidden></span>' +
         '<input type="number" class="atk-each" min="0" placeholder="—" hidden aria-label="Damage to ' + esc(c.name) + '">';
@@ -3306,8 +3550,23 @@ unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304
     const a = state.combatants.find(c => c.id === state.activeId);
     if(!a || $("#atk-go").disabled) return;
     const split = atkTicked().length > 1 && atkMode === "split";
+    const hits = atkAmounts().filter(x => x.target).map(x => ({id:x.target.id, n:x.amount}));
+    const conds = atkConds.map(x => ({k:x.k, n:x.n}));
+    closeAttack();
+    // a player's attack is applied by the DM's device, which also shows the reveal
+    if(playing()) return roomSend({t:"attack", hits, conds, split});
+    const results = resolveAttack(a, hits, conds, split);
+    save(); render();
+    openReveal(a, results);
+  }
+
+  /* Applies one attack by `a`: `hits` is [{id, n}] where n is the damage, 0 for
+     a miss or null for none, and `conds` is [{k, n}]. Shared by the dialog and
+     by an attack a player sends from their own device. Returns what the reveal shows. */
+  function resolveAttack(a, hits, conds, split){
     const results = [];
-    atkAmounts().forEach(({target:t, amount}) => {
+    hits.forEach(({id, n:amount}) => {
+      const t = state.combatants.find(c => c.id === id);
       if(!t) return;
       const res = {id:t.id, name:t.name, type:t.type, icon:t.icon, img:t.img, maxHp:t.maxHp,
                    before:t.hp, tempBefore:t.tempHp, amount, miss:false, conds:[]};
@@ -3318,7 +3577,7 @@ unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304
         res.miss = true;
       }
       // a condition the target already has takes the new duration
-      atkConds.forEach(x => {
+      conds.forEach(x => {
         const have = t.conds.find(y => y.k === x.k);
         if(have) have.n = x.n; else t.conds.push({k:x.k, n:x.n});
         logEvent("cond", t.name + " is now " + COND[x.k].n + (x.n > 0 ? " (" + x.n + ")" : ""));
@@ -3329,9 +3588,7 @@ unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304
       results.push(res);
     });
     pendingFloats = [];      // the reveal shows the numbers instead
-    closeAttack();
-    save(); render();
-    openReveal(a, results);
+    return results;
   }
 
   $("#atk-mode").querySelectorAll("button").forEach(b => b.addEventListener("click", () => {
@@ -3529,6 +3786,7 @@ unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304
     if(name === "chars") paintParty();
     if(name === "load")  paintCamps();
     if(name === "enc")   paintEnc();
+    if(name === "room")  paintJoin();
     if(name === "track") render();
     window.scrollTo(0, 0);
   }
@@ -3561,7 +3819,8 @@ unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304
     resume:   {field:"#8c1f1f", lit:"#b03030", dim:"#5c1212"},
     campaign: {field:"#1f4f8c", lit:"#2f6fb8", dim:"#143355"},
     load:     {field:"#1f6b3a", lit:"#2f8f50", dim:"#123f22"},
-    quick:    {field:"#4a2478", lit:"#653499", dim:"#2a1145"}
+    quick:    {field:"#4a2478", lit:"#653499", dim:"#2a1145"},
+    join:     {field:"#8c5a1f", lit:"#b07a30", dim:"#5c3a12"}
   };
 
   const EMBLEMS = {
@@ -3576,7 +3835,10 @@ unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304
                "...#####...","..#######..",".#########.","###########","..........."],
     swords:["#.........#","##.......##",".##.....##.","..##...##..",
             "...##.##...","....###....","...##.##...","..##...##..",
-            ".#########.","..#.....#..","..#.....#..",".###...###.","..........."]
+            ".#########.","..#.....#..","..#.....#..",".###...###.","..........."],
+    key:["...#####...","..#.....#..","..#.....#..","..#.....#..",
+         "...#####...",".....#.....",".....#.....",".....###...",
+         ".....#.....",".....##....",".....#.....",".....###...","..........."]
   };
 
   function bannerSprite(themeKey, emblemKey){
@@ -3808,6 +4070,7 @@ unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304
       ? plural(c, "campaign") + " saved."
       : "No campaigns saved yet.";
     $("#m-load").disabled = !c;
+    $("#m-join").hidden = !ROOMS_ON;
     lobbySync();
   }
 
@@ -4118,8 +4381,7 @@ unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304
       const s = normalize(JSON.parse(JSON.stringify(camp.battle)));
       if(!s) return;
       // preferences belong to the device, not to the saved fight
-      ["reduceMotion","emojiFont","askTies","showHelp","showLog"]
-        .forEach(k => { s[k] = state[k]; });
+      PREFS.forEach(k => { s[k] = state[k]; });
       s.campaignId = camp.id;
       state = s;
       save("quiet");
@@ -4140,6 +4402,729 @@ unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304
         "Clear and play", go);
     else go();
   }
+
+  /* ---------------- rooms ----------------
+     Multiplayer at the table. The DM's device opens a room and gets a five-letter
+     code, and players type that code on their own devices. The DM's device stays
+     the only one that changes the battle:
+       - after every save it writes a cleaned-up copy of the board to Firebase,
+       - players' devices stream that copy and draw it with the same render(),
+       - whatever a player does (attack, finish their turn, change their own HP) is
+         sent back as an action, which the DM's device checks and then applies
+         through the same functions the DM's own buttons use.
+     So undo, the log and the turn logic need no idea that rooms exist.
+
+     It all goes over Firebase's REST API and its Server-Sent Events stream, so
+     there is no SDK to embed. Each device signs in to an anonymous Firebase
+     account, which is what firebase/database.rules.json checks against. This is
+     the only part of the app that uses the network, and only while a room is open. */
+  const MULTIPLAYER = true;
+  // Rooms stay hidden until the Firebase project's details are filled in here: db is
+  // the Realtime Database URL and key the web API key. See "Multiplayer rooms" in
+  // README.md. For testing, localStorage "dnd-rooms-dev" can hold
+  // {"db":..., "key":..., "auth":...} pointing somewhere else instead.
+  //
+  // Opening the page with ?roomsdev sets that to the server the page itself came
+  // from, which is what `npm run rooms:dev` serves: the app and a stand-in for
+  // Firebase on one address, so phones on the same Wi-Fi can test rooms with no
+  // Firebase project at all. ?roomsdev=off clears it. It only ever points at the
+  // page's own origin, so a link cannot send a room to someone else's server.
+  const ROOMS_CFG = (() => {
+    const cfg = {db:"", key:"", auth:""};
+    const DEV = "dnd-rooms-dev";
+    try{
+      const q = new URLSearchParams(location.search);
+      if(q.has("roomsdev")){
+        if(q.get("roomsdev") === "off") localStorage.removeItem(DEV);
+        else if(/^https?:$/.test(location.protocol)){
+          localStorage.setItem(DEV, JSON.stringify({db:location.origin, key:"dev", auth:location.origin, local:true}));
+        }
+        dropParam("roomsdev");
+      }
+      const dev = JSON.parse(localStorage.getItem(DEV) || "null");
+      if(dev && dev.db) return Object.assign(cfg, dev);
+    }catch(e){}
+    return cfg;
+  })();
+  const ROOMS_ON = MULTIPLAYER && !!ROOMS_CFG.db && !!ROOMS_CFG.key;
+  // Players join from the web. The phone app's own origin is not reachable from anyone
+  // else's device. The local test server is, so its join link points back at itself.
+  const JOIN_URL = ROOMS_CFG.local ? location.origin + location.pathname
+                                   : "https://brijettesj.github.io/Battle-Initiative-Tracker/";
+  const ROOM_STORE = "dnd-room-v1", AUTH_STORE = "dnd-room-auth-v1";
+  const CODE_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";   // nothing that reads as another letter
+  const CODE_RE = /^[A-HJ-NP-Z2-9]{5}$/;
+  const ROOM_TTL = 24 * 3600 * 1000;                         // after this a code can be taken again
+
+  let pendingCode = "";      // from a ?room= link, waiting on the join screen
+
+  const roomPath = (r, sub) => "rooms/" + r.code + (sub ? "/" + sub : "");
+  const claimKey = c => c.charId || c.id;   // a campaign character keeps its claim from one fight to the next
+  const toList = v => Array.isArray(v) ? v.filter(x => x != null) : (v && typeof v === "object") ? Object.values(v) : [];
+
+  function newCode(){
+    const n = new Uint32Array(5);
+    crypto.getRandomValues(n);
+    return [...n].map(x => CODE_CHARS[x % CODE_CHARS.length]).join("");
+  }
+
+  /* ---- anonymous sign-in ----
+     The account is kept on the device, so after a reload the DM still owns the
+     room and a player still holds their character. */
+  let authCache = null, authWait = null;
+  try{ authCache = JSON.parse(localStorage.getItem(AUTH_STORE) || "null"); }catch(e){}
+  const myUid = () => authCache ? authCache.uid : null;
+  const authUrl = path => (ROOMS_CFG.auth ? ROOMS_CFG.auth.replace(/\/$/, "") + "/" : "https://") +
+                          path + "?key=" + encodeURIComponent(ROOMS_CFG.key);
+
+  function setAuth(uid, token, refresh, secs){
+    authCache = {uid, token, refresh, exp:Date.now() + (parseInt(secs, 10) || 3600) * 1000};
+    try{ localStorage.setItem(AUTH_STORE, JSON.stringify(authCache)); }catch(e){}
+  }
+
+  // one sign-in at a time, however many requests are waiting on it
+  const roomToken = () => authWait || (authWait = fetchToken().finally(() => { authWait = null; }));
+
+  async function fetchToken(){
+    const a = authCache;
+    if(a && a.token && a.exp - 60000 > Date.now()) return a.token;
+    if(a && a.refresh){
+      const res = await fetch(authUrl("securetoken.googleapis.com/v1/token"), {
+        method:"POST", headers:{"Content-Type":"application/x-www-form-urlencoded"},
+        body:"grant_type=refresh_token&refresh_token=" + encodeURIComponent(a.refresh)
+      });
+      if(res.ok){
+        const j = await res.json();
+        setAuth(j.user_id, j.id_token, j.refresh_token, j.expires_in);
+        return authCache.token;
+      }
+    }
+    const res = await fetch(authUrl("identitytoolkit.googleapis.com/v1/accounts:signUp"), {
+      method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({returnSecureToken:true})
+    });
+    if(!res.ok) throw new Error("auth");
+    const j = await res.json();
+    setAuth(j.localId, j.idToken, j.refreshToken, j.expiresIn);
+    return authCache.token;
+  }
+
+  /* ---- the database ---- */
+  function dbUrl(path, token){
+    const u = new URL(ROOMS_CFG.db);
+    u.pathname = u.pathname.replace(/\/$/, "") + "/" + path + ".json";
+    u.searchParams.set("auth", token);
+    return u.toString();
+  }
+
+  async function roomReq(method, path, body){
+    const token = await roomToken();
+    const res = await fetch(dbUrl(path, token), {method, body:body === undefined ? undefined : JSON.stringify(body)});
+    if(!res.ok){
+      if(res.status === 401) authCache.exp = 0;   // an expired token: the next call signs in again
+      throw new Error(res.status === 401 || res.status === 403 ? "denied" : "http");
+    }
+    return res.json();
+  }
+
+  /* Writes `data` at `keys` inside a copy of `obj`. A null removes the key, and a
+     branch left empty goes too, which is how Firebase itself reports it. */
+  function putAt(obj, keys, data){
+    if(!keys.length) return data;
+    const o = (obj && typeof obj === "object") ? Object.assign({}, obj) : {};
+    const v = putAt(o[keys[0]], keys.slice(1), data);
+    if(v === null || v === undefined) delete o[keys[0]]; else o[keys[0]] = v;
+    return Object.keys(o).length ? o : null;
+  }
+
+  /* A live copy of one path. Firebase sends the whole value when the stream opens,
+     then each change as a put (replace below a path) or a patch (merge children). */
+  function roomListen(path, onValue){
+    const l = {value:null, es:null, closed:false};
+    const retry = () => { if(!l.closed) setTimeout(open, 3000); };
+    async function open(){
+      if(l.closed) return;
+      let token;
+      try{ token = await roomToken(); }catch(e){ roomStatus("off"); return retry(); }
+      if(l.closed) return;
+      const es = l.es = new EventSource(dbUrl(path, token));
+      const take = merge => ev => {
+        let msg;
+        try{ msg = JSON.parse(ev.data); }catch(e){ return; }
+        if(!msg) return;
+        const ks = String(msg.path || "/").split("/").filter(Boolean);
+        if(merge) Object.keys(msg.data || {}).forEach(k => { l.value = putAt(l.value, ks.concat(k), msg.data[k]); });
+        else l.value = putAt(l.value, ks, msg.data);
+        roomStatus("live");
+        onValue(l.value);
+      };
+      es.addEventListener("put", take(false));
+      es.addEventListener("patch", take(true));
+      es.addEventListener("error", () => {
+        if(l.closed) return;
+        roomStatus(navigator.onLine === false ? "off" : "wait");
+        // CLOSED means the browser has given up, rather than reconnecting by itself.
+        // EventSource does not say why, and the usual reason is a token the server
+        // no longer accepts, so the next attempt signs in again first.
+        if(es.readyState === 2){
+          if(authCache) authCache.exp = 0;
+          retry();
+        }
+      });
+      // the token ran out, or the rules now refuse: start over with a fresh token
+      es.addEventListener("auth_revoked", () => { es.close(); if(authCache) authCache.exp = 0; open(); });
+      es.addEventListener("cancel", () => { es.close(); retry(); });
+    }
+    l.close = () => { l.closed = true; if(l.es) l.es.close(); };
+    open();
+    return l;
+  }
+
+  function roomStatus(s){
+    if(!room || room.status === s) return;
+    room.status = s;
+    roomChrome();
+  }
+
+  function remember(){
+    try{
+      localStorage.setItem(ROOM_STORE, JSON.stringify({role:room.role, code:room.code,
+        myKey:room.myKey || null, picked:!!room.picked}));
+    }catch(e){}
+  }
+  const forget = () => { try{ localStorage.removeItem(ROOM_STORE); }catch(e){} };
+
+  /* Drops the connection and the room's in-memory state, nothing else. */
+  function stopRoom(){
+    if(!room) return null;
+    const r = room;
+    clearTimeout(r.pushT); clearTimeout(r.goneT);
+    r.streams.forEach(s => s.close());
+    room = null;
+    forget();
+    delete document.body.dataset.role;
+    roomChrome();
+    return r;
+  }
+
+  /* ---- what players are sent ----
+     Players and allies go as they are, apart from the DM's notes. An enemy goes
+     as its name, sprite, initiative, conditions and how hurt it looks. The log
+     only carries lines that give away no numbers. Portraits go separately, once
+     each, so a hit point of damage does not re-send every picture on the board. */
+  const PUBLIC_LOG = ["turn","system","down","cond"];
+  const hashStr = s => {
+    let h = 5381;
+    for(let i = 0; i < s.length; i++) h = (h * 33 + s.charCodeAt(i)) | 0;
+    return (h >>> 0).toString(36) + s.length.toString(36);
+  };
+
+  function publicView(s){
+    const art = {};
+    const combatants = s.combatants.map(c => {
+      const o = {id:c.id, name:c.name, type:c.type, icon:c.icon, init:c.init, conds:c.conds};
+      if(c.img){ o.art = hashStr(c.img); art[o.art] = c.img; }
+      if(c.type === "enemy") o.hs = healthOf(c);
+      else Object.assign(o, {charId:c.charId, ac:c.ac, hp:c.hp, maxHp:c.maxHp, tempHp:c.tempHp});
+      return o;
+    });
+    const camp = s.campaignId && findCampaign(s.campaignId);
+    return {
+      art,
+      view:{v:1, round:s.round, activeId:s.activeId, turnDirty:s.turnDirty, camp:camp ? camp.name : null,
+            log:s.log.filter(e => PUBLIC_LOG.includes(e.k)).slice(-50), combatants}
+    };
+  }
+
+  /* ---- hosting ---- */
+  async function hostRoom(){
+    if(!ROOMS_ON || room) return;
+    const btn = $("#room-start");
+    btn.disabled = true;
+    roomMsg("Opening a room…");
+    try{
+      await roomToken();
+      let code = null;
+      for(let i = 0; i < 6 && !code; i++){
+        const c = newCode();
+        const meta = await roomReq("GET", "rooms/" + c + "/meta");
+        if(!meta || meta.owner === myUid() || meta.at < Date.now() - ROOM_TTL) code = c;
+      }
+      if(!code) throw new Error("busy");
+      await roomReq("PUT", "rooms/" + code, {meta:{owner:myUid(), at:{".sv":"timestamp"}}});
+      startHost(code);
+      roomMsg("");
+    }catch(e){
+      roomMsg("The room could not be opened. Check the internet connection and try again.");
+    }
+    btn.disabled = false;
+    paintRoomPanel();
+  }
+
+  function startHost(code){
+    room = {role:"host", code, status:"wait", streams:[], claims:{}, done:new Set(),
+            sentArt:new Set(), lastView:null, q:Promise.resolve(), touched:Date.now()};
+    const r = room;
+    remember();
+    r.streams.push(roomListen(roomPath(r, "actions"), v => { if(room === r) onActions(v); }));
+    r.streams.push(roomListen(roomPath(r, "claims"), v => {
+      if(room !== r) return;
+      r.claims = v || {};
+      if(!$("#room").classList.contains("hidden")) paintRoomPanel();
+    }));
+    roomPush();
+    roomChrome();
+  }
+
+  function roomPush(){
+    if(!hosting()) return;
+    const r = room;
+    clearTimeout(r.pushT);
+    // a short wait folds a burst of saves (typing, an attack's several logs) into one write
+    r.pushT = setTimeout(() => { r.q = r.q.then(() => roomFlush(r)); }, 150);
+  }
+
+  async function roomFlush(r){
+    if(room !== r) return;
+    const {view, art} = publicView(state);
+    try{
+      const fresh = {};
+      Object.keys(art).forEach(k => { if(!r.sentArt.has(k)) fresh[k] = art[k]; });
+      if(Object.keys(fresh).length){
+        await roomReq("PATCH", roomPath(r, "art"), fresh);
+        Object.keys(fresh).forEach(k => r.sentArt.add(k));
+      }
+      const json = JSON.stringify(view);
+      if(json !== r.lastView){
+        await roomReq("PUT", roomPath(r, "view"), view);
+        r.lastView = json;
+      }
+      // keep a long session's code from counting as expired
+      if(Date.now() - r.touched > 3600 * 1000){
+        await roomReq("PATCH", roomPath(r, "meta"), {at:{".sv":"timestamp"}});
+        r.touched = Date.now();
+      }
+      if(room === r) roomStatus("live");
+    }catch(e){
+      if(room !== r) return;
+      if(e.message === "denied"){
+        // The room is gone: closed from another tab, or expired and taken.
+        const meta = await roomReq("GET", roomPath(r, "meta")).catch(() => undefined);
+        if(meta === null || (meta && meta.owner !== myUid())) return roomGone();
+      }
+      roomStatus("off");
+      clearTimeout(r.pushT);
+      r.pushT = setTimeout(roomPush, 4000);
+    }
+  }
+
+  /* Actions arrive in the order they were sent. Each is deleted once read, and
+     remembered, so the stream reporting that deletion cannot apply it twice. */
+  function onActions(v){
+    if(!v) return;
+    const r = room;
+    Object.keys(v).sort().forEach(id => {
+      if(!v[id] || r.done.has(id)) return;
+      r.done.add(id);
+      roomReq("DELETE", roomPath(r, "actions/" + id)).catch(() => {});
+      applyAction(v[id]);
+    });
+  }
+
+  /* Nothing here trusts the sender: the character must be the one this account
+     claimed, and turn actions must be for the turn that is actually running. */
+  function applyAction(a){
+    const me = state.combatants.find(c => c.id === a.by);
+    if(!me || typeof a.uid !== "string" || room.claims[claimKey(me)] !== a.uid) return;
+    const onTurn = state.round > 0 && state.activeId === me.id && a.round === state.round;
+    if(a.t === "finish" && onTurn){
+      if(!state.turnDirty) logEvent("turn", me.name + " skipped their turn");
+      step(1);
+    } else if(a.t === "attack" && onTurn){
+      const num = v => (v === null || v === undefined) ? null : clamp(parseInt(v, 10) || 0, 0, 9999);
+      const hits = toList(a.hits).slice(0, 40)
+        .filter(h => typeof h.id === "string" && h.id !== me.id)
+        .map(h => ({id:h.id, n:num(h.n)}));
+      const conds = toList(a.conds).filter(x => COND[x.k])
+        .map(x => ({k:x.k, n:clamp(parseInt(x.n, 10) || 0, 0, 99)}));
+      if(!hits.length) return;
+      const results = resolveAttack(me, hits, conds, a.split === true);
+      save(); render();
+      openReveal(me, results);
+    } else if(a.t === "hp" && typeof a.raw === "string"){
+      applyHpInput(me, a.raw.slice(0, 12));
+      save(); render();
+    }
+  }
+
+  function closeRoom(){
+    const r = hosting() ? stopRoom() : null;
+    if(r) roomReq("DELETE", roomPath(r)).catch(() => {});
+    render();
+  }
+
+  async function resumeHost(code){
+    try{
+      const meta = await roomReq("GET", "rooms/" + code + "/meta");
+      if(meta && meta.owner === myUid() && !room) startHost(code);
+      else if(!room) forget();
+    }catch(e){
+      // offline at launch: try again shortly rather than dropping the room
+      setTimeout(() => { if(!room) resumeHost(code); }, 5000);
+    }
+  }
+
+  /* ---- playing ---- */
+  async function joinLookup(){
+    const code = $("#jr-code").value.trim().toUpperCase();
+    if(!CODE_RE.test(code)) return jrMsg("A room code is five letters and numbers.");
+    if(hosting()) return jrMsg("This device is hosting room " + room.code + ". Close it before joining another.");
+    $("#jr-go").disabled = true;
+    jrMsg("Looking for the room…");
+    try{
+      const meta = await roomReq("GET", "rooms/" + code + "/meta");
+      if(!meta) return jrMsg("There is no room with that code. Check it with your DM.");
+      if(meta.owner === myUid()) return jrMsg("That is the room this device is hosting.");
+      jrMsg("");
+      pendingCode = "";
+      joinRoom(code, null);
+      paintJoin();
+    }catch(e){
+      jrMsg("The room could not be reached. Check the internet connection and try again.");
+    }finally{
+      $("#jr-go").disabled = false;
+    }
+  }
+
+  function joinRoom(code, saved){
+    room = {role:"player", code, home:state, status:"wait", streams:[],
+            myKey:saved ? saved.myKey : null, picked:!!(saved && saved.picked),
+            view:null, claims:{}, art:{}, shown:false, claimedAt:0};
+    const r = room;
+    document.body.dataset.role = "player";
+    remember();
+    // One stream for the whole room rather than one each for the board, the claims
+    // and the portraits. A browser holds only six connections to a server that is
+    // not on HTTP/2, which the local test server is not, and every request past
+    // that waits. putAt() keeps unchanged branches as the same objects, so a
+    // comparison is enough to tell which part an update touched.
+    r.streams.push(roomListen(roomPath(r), v => {
+      if(room !== r) return;
+      clearTimeout(r.goneT);
+      if(!v || !v.meta){
+        // Give a room that is being replaced a moment before giving up on it.
+        r.goneT = setTimeout(() => {
+          roomReq("GET", roomPath(r, "meta")).then(m => { if(m === null && room === r) roomGone(); }).catch(() => {});
+        }, 1500);
+      }
+      const all = v || {};
+      const claims = all.claims || {}, art = all.art || {}, view = all.view || null;
+      let redraw = false;
+      if(claims !== r.claimsRaw){
+        r.claimsRaw = claims;
+        r.claims = claims;
+        // the DM let go of this device's character (a claim just made may not have arrived yet)
+        if(r.myKey && r.claims[r.myKey] !== myUid() && Date.now() - r.claimedAt > 5000){
+          r.myKey = null;
+          remember();
+        }
+        redraw = true;
+      }
+      if(art !== r.art){ r.art = art; redraw = true; }
+      if(view !== r.view){ r.view = view; redraw = true; }
+      if(!redraw) return;              // someone else's action came and went
+      if(r.view) applyView();
+      else if(r.shown) refreshPlayer();
+    }));
+    roomChrome();
+  }
+
+  /* Turns the view into an ordinary state object, so render() and everything it
+     calls draw it as they would the DM's own. Firebase drops empty arrays and
+     nulls, so every list is rebuilt rather than trusted. */
+  function applyView(){
+    const r = room, v = r.view;
+    const s = blankState(r.home);
+    s.round = parseInt(v.round, 10) || 0;
+    s.activeId = v.activeId || null;
+    s.turnDirty = v.turnDirty === true;
+    s.log = toList(v.log);
+    s.combatants = toList(v.combatants).map(c => Object.assign({}, c, {
+      conds:toList(c.conds), img:(c.art && r.art[c.art]) || null
+    }));
+    normalize(s);
+    s.campName = v.camp || null;
+
+    // what changed since the last copy rises off the cards, as it does on the DM's device
+    if(r.shown){
+      s.combatants.forEach(c => {
+        const o = state.combatants.find(x => x.id === c.id);
+        if(!o) return;
+        if(c.maxHp && o.maxHp && c.hp !== o.hp){
+          const up = c.hp > o.hp;
+          pendingFloats.push({id:c.id, text:(up ? "+" : "-") + Math.abs(c.hp - o.hp), kind:up ? "heal" : "dmg"});
+        } else if(c.hs && o.hs && c.hs !== o.hs){
+          pendingFloats.push({id:c.id, text:HEALTH[c.hs].n, kind:"dmg"});
+        }
+      });
+    }
+    state = s;
+    r.shown = true;
+    refreshPlayer();
+  }
+
+  function refreshPlayer(){
+    const scr = document.body.dataset.screen;
+    if(scr === "track") render();
+    else pendingFloats = [];
+    if(scr === "room") paintPick();
+    if(!$("#room").classList.contains("hidden")) paintRoomPanel();
+  }
+
+  function myCombatantId(){
+    if(!playing() || !room.myKey) return null;
+    const c = state.combatants.find(x => claimKey(x) === room.myKey);
+    return c ? c.id : null;
+  }
+
+  async function pickCharacter(key){
+    const r = room;
+    const old = r.myKey;
+    if(key && key !== old){
+      if(r.claims[key] && r.claims[key] !== myUid()) return jrMsg("Someone has already picked that character.");
+      try{
+        await roomReq("PUT", roomPath(r, "claims/" + key), myUid());
+      }catch(e){
+        return jrMsg(e.message === "denied" ? "Someone has already picked that character."
+                                            : "That did not reach the room. Check the internet connection and try again.");
+      }
+      if(room !== r) return;
+      r.claims = Object.assign({}, r.claims, {[key]:myUid()});
+      r.claimedAt = Date.now();
+    }
+    // the old character is let go afterwards, so a failed pick does not lose it
+    if(old && old !== key && r.claims[old] === myUid()){
+      roomReq("DELETE", roomPath(r, "claims/" + old)).catch(() => {});
+    }
+    r.myKey = key;
+    r.picked = true;
+    remember();
+    showScreen("track");
+    scrollToActive();
+  }
+
+  function roomSend(a){
+    const by = myCombatantId();
+    if(!by) return;
+    const r = room;
+    const body = Object.assign({}, a, {uid:myUid(), by, round:state.round});
+    roomReq("POST", roomPath(r, "actions"), body).then(res => {
+      // The DM's device deletes an action as soon as it reads it. One still there a
+      // few seconds later means nothing is running the room, so say so rather than
+      // leave the button looking broken.
+      const id = res && res.name;
+      if(!id) return;
+      clearTimeout(r.ackT);
+      r.ackT = setTimeout(() => {
+        roomReq("GET", roomPath(r, "actions/" + id)).then(left => {
+          if(left && room === r) askConfirm("No answer from the DM",
+            "The DM's device has not picked that up. It may be asleep, or the app may be closed there. " +
+            "It will go through once the DM's device is back in the room.", "OK", null);
+        }).catch(() => {});
+      }, 6000);
+    }).catch(() => {
+      askConfirm("Not sent", "That did not reach the DM's device. Check the internet connection and try again.", "OK", null);
+    });
+  }
+
+  function leaveRoom(){
+    if(!playing()) return;
+    const r = room;
+    if(r.myKey && r.claims[r.myKey] === myUid()){
+      roomReq("DELETE", roomPath(r, "claims/" + r.myKey)).catch(() => {});
+    }
+    stopRoom();
+    closeAttack(); closeReveal();
+    state = r.home;
+    syncChrome();
+    render();
+  }
+
+  /* The DM closed the room, or it expired while this device was away. */
+  function roomGone(){
+    if(!room) return;
+    const code = room.code, wasPlaying = playing();
+    if(wasPlaying) leaveRoom(); else stopRoom();
+    closeRoomPanel();
+    if(wasPlaying) showScreen("menu");
+    else render();
+    askConfirm("Room closed", wasPlaying ? "Room " + code + " has been closed by the DM."
+                                         : "Room " + code + " is no longer open.", "OK", null);
+  }
+
+  /* ---- the join screen ---- */
+  const jrMsg = t => { $("#jr-msg").textContent = t; };
+
+  function paintJoin(){
+    const inRoom = playing();
+    $("#jr-code").value = inRoom ? room.code : (pendingCode || $("#jr-code").value);
+    $("#jr-code").disabled = inRoom;
+    $("#jr-go").hidden = inRoom;
+    $("#jr-pick").hidden = !inRoom;
+    jrMsg("");
+    paintPick();
+  }
+
+  function paintPick(){
+    if(!playing() || document.body.dataset.screen !== "room") return;
+    const box = $("#jr-list");
+    box.innerHTML = "";
+    if(!room.shown){
+      box.innerHTML = '<div class="empty">Connecting to the room…</div>';
+      return;
+    }
+    const heroes = state.combatants.filter(c => c.type === "player");
+    if(!heroes.length){
+      box.innerHTML = '<div class="empty">The DM has not put any player characters on the board yet. ' +
+        "They will appear here when they do.</div>";
+    }
+    heroes.forEach(c => {
+      const key = claimKey(c), owner = room.claims[key];
+      const mine = key === room.myKey && owner === myUid(), taken = !!owner && owner !== myUid();
+      const row = document.createElement("div");
+      row.className = "set-row party-row" + (taken ? " taken" : "");
+      row.innerHTML = '<i class="face"></i><span class="who"><b>' + esc(c.name) + '</b><small>' +
+        esc(c.maxHp ? c.hp + " / " + c.maxHp + " HP" : "No HP set") + '</small></span>' +
+        (taken ? '<span class="tag">Taken</span>'
+               : '<button type="button" class="btn-sm' + (mine ? '' : ' btn-blood') + '">' +
+                 (mine ? "Keep" : "This is me") + '</button>');
+      fillFace(row, c);
+      const b = row.querySelector("button");
+      if(b) b.addEventListener("click", () => pickCharacter(key));
+      box.appendChild(row);
+    });
+    const watch = document.createElement("div");
+    watch.className = "set-row party-row";
+    watch.innerHTML = '<span class="who"><b>Just watch</b><small>Follow the battle without a character.</small></span>' +
+      '<button type="button" class="btn-sm">Watch</button>';
+    watch.querySelector("button").addEventListener("click", () => pickCharacter(null));
+    box.appendChild(watch);
+  }
+
+  function joinBack(){
+    if(playing() && room.picked) return showScreen("track");
+    if(playing()) leaveRoom();
+    showScreen("menu");
+  }
+
+  /* ---- the room panel and button ---- */
+  const roomMsg = t => { $("#room-msg").textContent = t; };
+
+  function roomChrome(){
+    const btn = $("#btn-room");
+    btn.hidden = !ROOMS_ON;
+    const dot = btn.querySelector(".room-dot");
+    dot.hidden = !room;
+    if(room) dot.dataset.s = room.status;
+    btn.querySelector(".lbl").innerHTML = room
+      ? '<span class="word">Room </span><span class="code">' + room.code + "</span>" : "Room";
+  }
+
+  function paintRoomPanel(){
+    $("#room-open").hidden = !!room;
+    $("#room-host").hidden = !hosting();
+    $("#room-player").hidden = !playing();
+    if(hosting()){
+      $("#room-code").textContent = room.code;
+      $("#room-link").textContent = JOIN_URL + "?room=" + room.code;
+      const box = $("#room-claims");
+      box.innerHTML = "";
+      const keys = Object.keys(room.claims);
+      if(!keys.length) box.innerHTML = '<div class="empty">No one has picked a character yet.</div>';
+      keys.forEach(k => {
+        const c = state.combatants.find(x => claimKey(x) === k);
+        const row = document.createElement("div");
+        row.className = "set-row party-row";
+        row.innerHTML = (c ? '<i class="face"></i>' : "") + '<span class="who"><b>' +
+          esc(c ? c.name : "A character not on the board") + '</b><small>Played from another device</small></span>' +
+          '<button type="button" class="btn-sm btn-ghost">Release</button>';
+        if(c) fillFace(row, c);
+        row.querySelector("button").addEventListener("click", () => {
+          roomReq("DELETE", roomPath(room, "claims/" + k)).catch(() => roomMsg("That did not reach the room. Try again."));
+        });
+        box.appendChild(row);
+      });
+    }
+    if(playing()){
+      $("#room-pcode").textContent = room.code;
+      const me = state.combatants.find(c => c.id === myCombatantId());
+      $("#room-who").textContent = me ? "You are playing " + me.name + "." : "You are watching.";
+    }
+  }
+
+  function openRoomPanel(){
+    roomMsg("");
+    paintRoomPanel();
+    $("#room").classList.remove("hidden");
+  }
+  function closeRoomPanel(){ $("#room").classList.add("hidden"); }
+
+  /* A ?room= link opens the join screen with the code filled in. A room this
+     device was already in is picked back up, since a phone can reload the page
+     whenever it is put away. */
+  function roomBoot(){
+    roomChrome();
+    if(!ROOMS_ON) return;
+    const linked = (new URLSearchParams(location.search).get("room") || "").toUpperCase();
+    if(linked) dropParam("room");
+    let saved = null;
+    try{ saved = JSON.parse(localStorage.getItem(ROOM_STORE) || "null"); }catch(e){}
+    if(saved && !CODE_RE.test(saved.code || "")) saved = null;
+
+    if(saved && saved.role === "host") resumeHost(saved.code);
+    else if(saved && saved.role === "player" && (!linked || linked === saved.code)){
+      joinRoom(saved.code, saved);
+      document.body.dataset.screen = saved.picked ? "track" : "room";
+      if(!saved.picked) paintJoin();
+      return;
+    }
+    if(CODE_RE.test(linked) && !(saved && saved.role === "host")){
+      if(saved) forget();
+      pendingCode = linked;
+      document.body.dataset.screen = "room";
+      paintJoin();
+    }
+  }
+
+  $("#m-join").addEventListener("click", () => {
+    if(!hosting()) return showScreen("room");
+    askConfirm("Close your room",
+      "This device is hosting room " + room.code + ". Close it and join another room?",
+      "Close room", () => { closeRoom(); showScreen("room"); });
+  });
+  $("#jr-go").addEventListener("click", joinLookup);
+  $("#jr-code").addEventListener("keydown", e => { if(e.key === "Enter") joinLookup(); });
+  $("#jr-code").addEventListener("input", e => {
+    const v = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, "");
+    if(v !== e.target.value) e.target.value = v;
+  });
+  $("#jr-back").addEventListener("click", joinBack);
+  $("#btn-room").addEventListener("click", e => { e.currentTarget.blur(); openRoomPanel(); });
+  $("#room-start").addEventListener("click", hostRoom);
+  $("#room-close").addEventListener("click", () => {
+    if(!hosting()) return;
+    askConfirm("Close room",
+      "Everyone in room " + room.code + " is disconnected and the code stops working.",
+      "Close room", () => { closeRoom(); paintRoomPanel(); });
+  });
+  $("#room-leave").addEventListener("click", () => {
+    if(!playing()) return;
+    closeRoomPanel();
+    askConfirm("Leave room", "Leave room " + room.code + " and go back to the menu?", "Leave room",
+      () => { leaveRoom(); showScreen("menu"); });
+  });
+  $("#room-repick").addEventListener("click", () => { closeRoomPanel(); showScreen("room"); });
+  $("#room-done").addEventListener("click", closeRoomPanel);
+  $("#room").addEventListener("mousedown", e => { if(e.target.id === "room") closeRoomPanel(); });
 
   /* ---- wiring ---- */
   $("#m-resume").addEventListener("click", () => showScreen("track"));
@@ -4180,6 +5165,10 @@ unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304
   /* ---------------- toolbar & keys ---------------- */
   $("#btn-menu").addEventListener("click", e => {
     e.currentTarget.blur();
+    // the board on a player's device is the DM's, so the menu means leaving the room
+    if(playing()) return askConfirm("Leave room",
+      "Leave room " + room.code + " and go back to the menu? You can join again with the same code.",
+      "Leave room", () => { leaveRoom(); showScreen("menu"); });
     stashBattle();
     showScreen("menu");
   });
@@ -4463,6 +5452,7 @@ unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304
                           !revealEl.classList.contains("hidden") ||
                           !els.tie.classList.contains("hidden") ||
                           !$("#ask").classList.contains("hidden") ||
+                          !$("#room").classList.contains("hidden") ||
                           settingsOpen() || addOpen();
 
   document.addEventListener("keydown", e => {
@@ -4478,6 +5468,7 @@ unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304
         els.picker.classList.add("hidden"); els.condMenu.classList.add("hidden"); return;
       }
       if(!$("#ask").classList.contains("hidden")) return closeAsk();
+      if(!$("#room").classList.contains("hidden")) return closeRoomPanel();
       if(settingsOpen()) return closeSettings();
       if(addOpen()) return closeAdd();
       if(!revealEl.classList.contains("hidden")) return closeReveal();
@@ -4489,6 +5480,7 @@ unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304
       const scr = document.body.dataset.screen;
       if(scr === "chars") ccLeave();
       else if(scr === "load" || scr === "enc") showScreen("menu");
+      else if(scr === "room") joinBack();
       return;
     }
     if(modalOpen()) return;
@@ -4496,7 +5488,7 @@ unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304
     const t = e.target;
     if(t && (t.tagName === "INPUT" || t.tagName === "SELECT" || t.tagName === "TEXTAREA")) return;
     if(e.key === " " || e.key === "ArrowRight"){ e.preventDefault(); finishTurn(); }
-    else if(e.key === "ArrowLeft"){ e.preventDefault(); step(-1); }
+    else if(e.key === "ArrowLeft" && !playing()){ e.preventDefault(); step(-1); }
   });
 
   els.chkTies.checked = state.askTies !== false;
@@ -4515,6 +5507,7 @@ unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304
   paintMenu();
   lastSnap = snapshot();      // baseline: the first action becomes the first undo step
   updateHistoryButtons();
+  roomBoot();
 })();
 </script>
 </body>

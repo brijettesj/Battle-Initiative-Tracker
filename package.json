@@ -5,6 +5,7 @@
   "description": "Initiative and combat tracker for tabletop roleplaying games.",
   "scripts": {
     "build": "node build.js",
+    "rooms:dev": "node dev/rooms-server.js",
     "sync": "npm run build && cap sync",
     "add:android": "npm run build && cap add android",
     "add:ios": "npm run build && cap add ios",
