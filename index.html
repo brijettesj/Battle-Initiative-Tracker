@@ -868,19 +868,56 @@ unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304
   .float.miss{color:var(--dim)}
 
   /* attack dialog */
+  .atk-sec{margin-bottom:20px}
+  .atk-sec:last-of-type{margin-bottom:0}
+  .atk-sec .seg{margin-bottom:16px}
+  /* .seg and .field both set a display, which would beat the hidden attribute */
+  #atk-mode[hidden],#atk-dmg-field[hidden]{display:none}
   .atk-say{margin:0;align-self:center;flex:1;min-width:180px}
   .atk-list{max-height:260px;overflow-y:auto;padding:2px}
-  /* The rows are <label>s sitting inside a .field, so they would otherwise
-     pick up the field label's small uppercase pixel type. */
-  .field .atk-row{
-    cursor:pointer;font-family:var(--crt);font-size:19px;letter-spacing:0;
-    text-transform:none;color:var(--bone);
-  }
+  .atk-row .enc-who canvas{width:34px;height:34px;flex:none}
+  .atk-share{font-family:var(--ui);font-size:11px;color:var(--flame);white-space:nowrap}
+  .atk-row .atk-each{width:76px;flex:0 0 auto;text-align:center;font-family:var(--ui);font-size:11px;padding:9px 4px}
   .atk-row.down{opacity:.5}
   .atk-row.on{box-shadow:inset 0 0 0 2px var(--flame)}
   .atk-row[data-type=player] .who b{color:var(--player)}
   .atk-row[data-type=ally] .who b{color:var(--ally)}
   .atk-row[data-type=enemy] .who b{color:var(--enemy)}
+
+  /* attack reveal */
+  .rv-list{display:flex;flex-direction:column;gap:10px;max-height:60vh;overflow-y:auto;padding:2px}
+  .rv-row{
+    display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:4px 14px;align-items:center;
+    padding:12px 14px;background:var(--well);box-shadow:inset 0 0 0 2px var(--edge-dim);
+    transition:opacity .15s steps(3,end);
+  }
+  .rv-row.waiting{opacity:.25}
+  .rv-row > canvas{width:40px;height:40px}
+  .rv-main{min-width:0}
+  .rv-name{display:block;font-family:var(--ui);font-size:10px;font-weight:400;line-height:1.5;word-break:break-word}
+  .rv-row[data-type=player] .rv-name{color:var(--player)}
+  .rv-row[data-type=ally] .rv-name{color:var(--ally)}
+  .rv-row[data-type=enemy] .rv-name{color:var(--enemy)}
+  /* The ghost sits under the fill: the fill drops at once, the ghost waits and follows. */
+  .rv-bar{position:relative;height:18px;margin-top:8px;background:#000;box-shadow:inset 0 0 0 2px var(--edge-dim)}
+  .rv-fill,.rv-ghost{position:absolute;left:2px;top:2px;bottom:2px;max-width:calc(100% - 4px)}
+  .rv-ghost{background:var(--blood-lit);transition:width .5s ease-in}
+  .rv-fill{background:var(--moss);transition:width .35s ease-out}
+  .rv-fill.warn{background:var(--gold)}
+  .rv-fill.bad{background:var(--blood-lit);filter:brightness(.8)}
+  .rv-sub{font-size:17px;color:var(--dim);margin-top:4px}
+  .rv-hp{font-family:var(--ui);font-size:9px;font-weight:400;color:var(--bone);font-variant-numeric:tabular-nums}
+  .rv-soak{color:var(--player)}
+  .rv-down{margin-left:8px;color:var(--enemy);font-family:var(--ui);font-size:8px;text-transform:uppercase}
+  .rv-conds{display:flex;gap:4px;margin-top:4px}
+  .rv-conds canvas{width:18px;height:18px}
+  /* a fixed width, so every bar in the list ends at the same place */
+  .rv-row::after{content:"";grid-column:3;grid-row:1}
+  .rv-tag{
+    grid-column:3;grid-row:1;min-width:64px;text-align:right;
+    font-family:var(--ui);font-size:14px;color:var(--flame);text-shadow:2px 2px 0 #000;
+  }
+  .rv-tag.miss{color:var(--dim);font-size:10px;text-transform:uppercase}
 
   /* touch devices have no hover — keep the corner controls permanently visible */
   @media (hover:none){
@@ -988,6 +1025,11 @@ unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304
     .stage-card .hp-txt{text-align:center}
     .stage-actions{width:100%;gap:14px;flex-wrap:nowrap}
     .btn-big{flex:1 1 0;min-width:0;font-size:10px;padding:16px 6px;white-space:nowrap}
+    #atk-mode button{flex:1 1 auto;padding:10px 6px;font-size:8px}
+    .atk-row .atk-each{width:62px}
+    .rv-row{grid-template-columns:auto minmax(0,1fr);padding:10px 12px}
+    .rv-row::after{display:none}
+    .rv-tag{grid-column:2;grid-row:auto;justify-self:start;min-width:0;text-align:left}
     #btn-finish .sym{display:none}
 
     /* The add panel becomes a sheet over the fight, opened by the button
@@ -1290,9 +1332,10 @@ unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304
       it needs the internet the first time you switch, then works offline.<br>
       <b>Reorder</b> — on a phone the portrait is the grip: drag it up or down to move that character
       in the order. Swiping anywhere else on the row scrolls the page.<br>
-      <b>Attack</b> — once the battle starts, whoever is up takes the spotlight. <i>Attack</i> asks for the
-      damage, who took it (tick as many as an area spell hits) and any conditions it inflicts. Enter
-      <kbd>0</kbd> for a miss.<br>
+      <b>Attack</b> — once the battle starts, whoever is up takes the spotlight. <i>Attack</i> asks who was
+      hit (tick as many as an area spell hits), the damage and any conditions it inflicts. With several
+      targets the damage can be the <i>same</i> for each, <i>split</i> equally, or <i>different</i> per
+      target. Enter <kbd>0</kbd> for a miss. Afterwards the health bars of everyone hit drain in turn.<br>
       <b>Turns</b> — <i>Finish turn</i>, <kbd>Space</kbd> or <kbd>→</kbd> moves to the next combatant; if
       nothing happened that turn it asks before skipping. <kbd>←</kbd> goes back. Everything saves
       automatically, so you can close the tab and pick the fight back up.
@@ -1660,25 +1703,45 @@ unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304
 <div id="atk" class="overlay hidden">
   <div class="modal" style="max-width:560px">
     <h2 id="atk-title">Attack</h2>
-    <div class="row">
-      <div class="field">
-        <label for="atk-dmg">Damage</label>
-        <input type="number" id="atk-dmg" min="0" placeholder="—" style="width:110px">
-      </div>
-      <p class="set-note atk-say">0 is a miss. Leave it blank to only apply conditions.</p>
-    </div>
-    <div class="field" style="margin-bottom:16px">
-      <label>Targets</label>
+    <!-- Targets first: the mode switch and the damage box depend on how many are ticked. -->
+    <section class="atk-sec">
+      <div class="set-lbl">Targets</div>
       <div class="party-list atk-list" id="atk-targets"></div>
-    </div>
-    <div class="field">
-      <label>Conditions (optional)</label>
+    </section>
+    <section class="atk-sec">
+      <div class="seg" id="atk-mode" hidden>
+        <button type="button" data-v="same">Same to each</button>
+        <button type="button" data-v="split">Split equally</button>
+        <button type="button" data-v="each">Each different</button>
+      </div>
+      <div class="row atk-dmg-row">
+        <div class="field" id="atk-dmg-field">
+          <label for="atk-dmg" id="atk-dmg-lbl">Damage</label>
+          <input type="number" id="atk-dmg" min="0" placeholder="—" style="width:110px">
+        </div>
+        <p class="set-note atk-say" id="atk-say">0 is a miss. Leave it blank to only apply conditions.</p>
+      </div>
+    </section>
+    <section class="atk-sec">
+      <div class="set-lbl">Conditions (optional)</div>
       <div class="cond-list" id="atk-conds" style="max-height:180px"></div>
-    </div>
+    </section>
     <div class="modal-foot">
       <div class="spacer"></div>
       <button type="button" id="atk-cancel">Cancel</button>
       <button type="button" id="atk-go" class="btn-blood" disabled><span class="sym">⚔</span> Attack</button>
+    </div>
+  </div>
+</div>
+
+<!-- after an attack: who was hit, with their health bars draining -->
+<div id="reveal" class="overlay hidden">
+  <div class="modal" style="max-width:500px">
+    <h2 id="rv-title">Attack</h2>
+    <div class="rv-list" id="rv-list"></div>
+    <div class="modal-foot">
+      <div class="spacer"></div>
+      <button type="button" id="rv-done" class="btn-blood">Done</button>
     </div>
   </div>
 </div>
@@ -1772,8 +1835,62 @@ unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304
     dlg:$("#dlg"), tie:$("#tie"), tieList:$("#tie-list"), tieSay:$("#tie-say")
   };
 
+  seedDemo();
   let state = load();
   let pendingIcon = null;   // icon picked for the add-form (null = follow the Side dropdown)
+
+  /* ---------------- demo data ----------------
+     Opening the page as index.html?demo replaces the battle on the board with a
+     sample party and monsters at round 0, and adds a sample campaign holding the
+     same party. It is for testing: nothing links to it. It runs before load(),
+     so it writes storage rather than state, and the query is removed afterwards
+     so a reload does not wipe the fight being tested. */
+  function seedDemo(){
+    if(!/[?&]demo\b/.test(location.search)) return;
+    const CAMP_ID = "demo-ember-vale";
+    const who = (id, name, type, icon, init, mod, ac, hp, notes) =>
+      ({id, name, type, icon, img:null, init, mod, ac, hp, maxHp:hp, tempHp:0,
+        notes:notes || "", conds:[], charId:null});
+    const party = [
+      who("d-thalia", "Thalia",       "player", "🧙", 19, 3, 13, 38, "Wizard · holds Fireball for the goblins"),
+      who("d-bram",   "Bram",         "player", "🛡", 11, 0, 20, 52, "Paladin"),
+      who("d-grumm",  "Grumm",        "player", "🪓", 15, 2, 14, 45, "Barbarian · reckless below half HP"),
+      who("d-maren",  "Sister Maren", "ally",   "🔮", 8,  1, 15, 27, "Cleric of the Dawn, travelling with the party"),
+      who("d-nyx",    "Nyx",          "ally",   "🐈", 17, 4, 12, 5,  "Thalia's familiar")
+    ];
+    const foes = [
+      who("d-boss",  "Goblin Boss", "enemy", "👺", 16, 2, 17, 21, "Redirect attack: swaps with a goblin"),
+      who("d-gob1",  "Goblin 1",    "enemy", "👹", 14, 2, 15, 7),
+      who("d-gob2",  "Goblin 2",    "enemy", "👹", 12, 2, 15, 7),
+      who("d-wolf",  "Dire Wolf",   "enemy", "🐺", 13, 2, 14, 37, "Pack tactics · bite knocks prone"),
+      who("d-kelda", "Kelda",       "enemy", "🧌", 6,  -1, 11, 59, "Ogre")
+    ];
+    const fighters = party.concat(foes).sort((a, b) => b.init - a.init);
+    try{
+      const old = JSON.parse(localStorage.getItem(STORE) || "{}") || {};
+      localStorage.setItem(STORE, JSON.stringify({
+        round:0, activeId:null, campaignId:CAMP_ID,
+        // keep the settings the device already had
+        askTies:old.askTies, showHelp:old.showHelp, emojiFont:old.emojiFont,
+        showLog:old.showLog, reduceMotion:old.reduceMotion,
+        log:[], combatants:fighters
+      }));
+      // must match CAMP_STORE, which is declared further down
+      const lib = JSON.parse(localStorage.getItem("dnd-campaigns-v1") || "{}") || {};
+      const list = (Array.isArray(lib.list) ? lib.list : []).filter(c => c && c.id !== CAMP_ID);
+      const asChar = (c, cls) => ({id:c.id, name:c.name, player:"", cls, level:5, type:c.type,
+                                   icon:c.icon, mod:c.mod, ac:c.ac, maxHp:c.maxHp, notes:c.notes});
+      list.push({
+        id:CAMP_ID, name:"Demo: Curse of the Ember Vale", made:Date.now(),
+        chars:party.map(c => asChar(c, "")),
+        creatures:foes.filter(c => !/ \d+$/.test(c.name)).concat([Object.assign({}, foes[1], {id:"d-gob", name:"Goblin"})])
+          .map(c => asChar(c, "")),
+        battle:null
+      });
+      localStorage.setItem("dnd-campaigns-v1", JSON.stringify({v:1, list}));
+    }catch(e){ /* blocked storage: the app just opens as normal */ }
+    try{ history.replaceState(null, "", location.pathname + location.hash); }catch(e){}
+  }
 
   /* ---------------- sprites ----------------
      Every icon is an emoji drawn into a tiny canvas and upscaled by the browser
@@ -2013,7 +2130,7 @@ unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304
     try{ localStorage.setItem(STORE, JSON.stringify(state)); }catch(e){}
     restoring = false;
     // anything holding a reference into the old state must go
-    closeDialog(); closeAsk(); closeAttack();
+    closeDialog(); closeAsk(); closeAttack(); closeReveal();
     els.picker.classList.add("hidden");
     els.condMenu.classList.add("hidden");
     tieQueue = []; tieGroup = null;
@@ -3091,20 +3208,56 @@ unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304
   els.dlg.addEventListener("click", e => { if(e.target === els.dlg) closeDialog(); });
 
   /* ---------------- attack dialog ----------------
-     One attack from whoever is up: a damage number applied to every ticked
-     target, plus any conditions it inflicts. Everything is applied together and
-     saved once, so a single undo takes back the whole attack. */
+     One attack from whoever is up: damage to every ticked target, plus any
+     conditions it inflicts. With several targets the damage is either the same
+     for each, one total split equally (rounded down, as the rules round), or a
+     separate number per target. Everything is applied together and saved once,
+     so a single undo takes back the whole attack; the reveal afterwards only shows it. */
   const atkEl = $("#atk");
-  let atkConds = [];
+  let atkConds = [], atkMode = "same";
 
-  const atkTargets = () => [...$("#atk-targets").querySelectorAll(".atk-row")]
-    .filter(row => row.querySelector("input[type=checkbox]").checked);
+  const atkRows = () => [...$("#atk-targets").querySelectorAll(".atk-row")];
+  const atkTicked = () => atkRows().filter(row => row.querySelector("input[type=checkbox]").checked);
+  const num = v => (v.trim() === "" ? null : Math.max(0, parseInt(v, 10) || 0));
+
+  /* What each ticked target takes: a number, or null for no damage at all. */
+  function atkAmounts(){
+    const rows = atkTicked();
+    const mode = rows.length > 1 ? atkMode : "same";
+    const main = num($("#atk-dmg").value);
+    return rows.map(row => ({
+      row,
+      target: state.combatants.find(c => c.id === row.dataset.id),
+      amount: mode === "each"  ? num(row.querySelector(".atk-each").value)
+            : mode === "split" ? (main === null ? null : Math.floor(main / rows.length))
+            : main
+    }));
+  }
 
   function atkSync(){
-    const dmg = $("#atk-dmg").value.trim();
-    [...$("#atk-targets").querySelectorAll(".atk-row")].forEach(row =>
-      row.classList.toggle("on", row.querySelector("input[type=checkbox]").checked));
-    $("#atk-go").disabled = !atkTargets().length || (dmg === "" && !atkConds.length);
+    const ticked = atkTicked();
+    const mode = ticked.length > 1 ? atkMode : "same";
+    atkRows().forEach(row => row.classList.toggle("on", ticked.includes(row)));
+    $("#atk-mode").hidden = ticked.length < 2;
+    $("#atk-mode").querySelectorAll("button").forEach(b => b.classList.toggle("on", b.dataset.v === atkMode));
+    $("#atk-dmg-field").hidden = mode === "each";
+    $("#atk-dmg-lbl").textContent = mode === "split" ? "Total damage" : "Damage";
+    $("#atk-say").textContent = mode === "each"
+      ? "Type each target's damage beside its name. 0 is a miss; blank means no damage."
+      : mode === "split"
+      ? "Split between the ticked targets, rounded down. Leave it blank to only apply conditions."
+      : "0 is a miss. Leave it blank to only apply conditions.";
+    const amounts = atkAmounts();
+    atkRows().forEach(row => {
+      const on = ticked.includes(row);
+      row.querySelector(".atk-each").hidden = !(on && mode === "each");
+      const share = row.querySelector(".atk-share");
+      const hit = amounts.find(x => x.row === row);
+      share.hidden = !(on && mode === "split" && hit && hit.amount !== null);
+      if(!share.hidden) share.textContent = "→ " + hit.amount;
+    });
+    $("#atk-go").disabled = !ticked.length ||
+      (amounts.every(x => x.amount === null) && !atkConds.length);
   }
 
   function openAttack(){
@@ -3112,19 +3265,31 @@ unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304
     if(!a) return;
     $("#atk-title").textContent = "Attack: " + a.name;
     $("#atk-dmg").value = "";
+    atkMode = "same";
     const box = $("#atk-targets");
     box.innerHTML = "";
     state.combatants.filter(c => c.id !== a.id).forEach(c => {
-      const row = document.createElement("label");
+      const row = document.createElement("div");
       row.className = "set-row party-row atk-row" + (c.maxHp > 0 && c.hp <= 0 ? " down" : "");
       row.dataset.id = c.id;
-      row.innerHTML = '<input type="checkbox"><i class="face"></i>' +
+      row.dataset.type = c.type;
+      // the label wraps only the tick and the name, like the encounter roster,
+      // so typing into the damage box beside it cannot toggle the tick
+      row.innerHTML = '<label class="enc-who"><input type="checkbox"><i class="face"></i>' +
         '<span class="who"><b>' + esc(c.name) + '</b><small>' +
         esc((c.maxHp ? c.hp + " / " + c.maxHp + " HP" : "No HP set") + (c.ac ? " · AC " + c.ac : "")) +
-        '</small></span>';
+        '</small></span></label>' +
+        '<span class="atk-share" hidden></span>' +
+        '<input type="number" class="atk-each" min="0" placeholder="—" hidden aria-label="Damage to ' + esc(c.name) + '">';
       fillFace(row, c);
-      row.dataset.type = c.type;
-      row.querySelector("input").addEventListener("change", atkSync);
+      row.querySelector("input[type=checkbox]").addEventListener("change", atkSync);
+      const each = row.querySelector(".atk-each");
+      each.addEventListener("input", atkSync);
+      each.addEventListener("keydown", e => {
+        e.stopPropagation();
+        if(e.key === "Enter") commitAttack();
+        if(e.key === "Escape") closeAttack();
+      });
       box.appendChild(row);
     });
     if(!box.children.length) box.innerHTML = '<div class="empty">There is no one else on the board to attack.</div>';
@@ -3139,29 +3304,42 @@ unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304
 
   function commitAttack(){
     const a = state.combatants.find(c => c.id === state.activeId);
-    const rows = atkTargets();
-    if(!a || !rows.length || $("#atk-go").disabled) return;
-    const raw = $("#atk-dmg").value.trim();
-    const dmg = raw === "" ? null : Math.max(0, parseInt(raw, 10) || 0);
-    rows.forEach(row => {
-      const t = state.combatants.find(c => c.id === row.dataset.id);
+    if(!a || $("#atk-go").disabled) return;
+    const split = atkTicked().length > 1 && atkMode === "split";
+    const results = [];
+    atkAmounts().forEach(({target:t, amount}) => {
       if(!t) return;
-      if(dmg > 0) applyDamage(t, dmg, a.name);
-      else if(dmg === 0){
+      const res = {id:t.id, name:t.name, type:t.type, icon:t.icon, img:t.img, maxHp:t.maxHp,
+                   before:t.hp, tempBefore:t.tempHp, amount, miss:false, conds:[]};
+      if(amount > 0) applyDamage(t, amount, a.name);
+      else if(amount === 0 && split) logEvent("damage", a.name + " hit " + t.name + " for 0");
+      else if(amount === 0){
         logEvent("damage", a.name + " attacked " + t.name + " and missed");
-        pendingFloats.push({id:t.id, text:"Miss", kind:"miss"});
+        res.miss = true;
       }
       // a condition the target already has takes the new duration
       atkConds.forEach(x => {
         const have = t.conds.find(y => y.k === x.k);
         if(have) have.n = x.n; else t.conds.push({k:x.k, n:x.n});
         logEvent("cond", t.name + " is now " + COND[x.k].n + (x.n > 0 ? " (" + x.n + ")" : ""));
+        res.conds.push(x.k);
       });
+      res.after = t.hp;
+      res.tempAfter = t.tempHp;
+      results.push(res);
     });
+    pendingFloats = [];      // the reveal shows the numbers instead
     closeAttack();
     save(); render();
+    openReveal(a, results);
   }
 
+  $("#atk-mode").querySelectorAll("button").forEach(b => b.addEventListener("click", () => {
+    atkMode = b.dataset.v;
+    atkSync();
+    const first = atkMode === "each" ? atkTicked()[0].querySelector(".atk-each") : $("#atk-dmg");
+    if(first) first.focus();
+  }));
   $("#atk-dmg").addEventListener("input", atkSync);
   $("#atk-dmg").addEventListener("keydown", e => {
     e.stopPropagation();
@@ -3171,6 +3349,96 @@ unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304
   $("#atk-go").addEventListener("click", commitAttack);
   $("#atk-cancel").addEventListener("click", closeAttack);
   atkEl.addEventListener("click", e => { if(e.target === atkEl) closeAttack(); });
+
+  /* ---------------- attack reveal ----------------
+     Everyone the attack touched, one after another: the health bar drops at
+     once and a red ghost of what was lost lingers, then shrinks after it, while
+     the HP number counts down. Purely a display of what commitAttack() already saved. */
+  const revealEl = $("#reveal");
+  const RV_STAGGER = 450, RV_DROP = 350, RV_GHOST_WAIT = 550;
+  let rvTimers = [], rvFrames = [];
+
+  const hpTone = (hp, max) => { const p = hp / max; return p <= 0.25 ? "bad" : p <= 0.5 ? "warn" : "on"; };
+
+  function openReveal(attacker, results){
+    closeReveal();
+    const calm = document.body.classList.contains("calm");
+    $("#rv-title").textContent = attacker.name + "'s attack";
+    const list = $("#rv-list");
+    list.innerHTML = "";
+    results.forEach((r, i) => {
+      const row = document.createElement("div");
+      row.className = "rv-row";
+      row.dataset.type = r.type;
+      const pct = hp => r.maxHp ? clamp(hp / r.maxHp * 100, 0, 100) : 0;
+      const tag = r.miss ? '<span class="rv-tag miss">Miss</span>'
+                : r.amount !== null ? '<span class="rv-tag">-' + r.amount + '</span>' : "";
+      const soaked = r.amount > 0 ? r.tempBefore - r.tempAfter : 0;
+      row.innerHTML = '<i class="face"></i>' +
+        '<div class="rv-main"><b class="rv-name">' + esc(r.name) + '</b>' +
+        (r.maxHp
+          // starting widths go in the markup: set afterwards, the bars would grow up from empty first
+          ? '<div class="rv-bar"><span class="rv-ghost" style="width:' + pct(r.before) + '%"></span>' +
+            '<span class="rv-fill ' + hpTone(r.before, r.maxHp) + '" style="width:' + pct(r.before) + '%"></span></div>' +
+            '<div class="rv-sub"><b class="rv-hp">' + r.before + ' / ' + r.maxHp + '</b> HP' +
+            (soaked ? ' <span class="rv-soak">· ' + soaked + ' soaked by temp HP</span>' : '') +
+            '<span class="rv-down" hidden><span class="sym">☠</span> Down</span></div>'
+          : '<div class="rv-sub">No HP set</div>') +
+        '<div class="rv-conds"></div></div>' + tag;
+      row.querySelector(".face").replaceWith(iconSprite(r.img || r.icon));
+      r.conds.forEach(k => row.querySelector(".rv-conds").appendChild(sprite(COND[k].e, 16)));
+      list.appendChild(row);
+
+      const fill = row.querySelector(".rv-fill"), ghost = row.querySelector(".rv-ghost");
+      const delay = calm ? 0 : i * RV_STAGGER;
+      if(!calm){
+        row.classList.add("waiting");
+        fill && [fill, ghost].forEach(el => { el.style.transitionDelay = "0ms"; });
+      }
+      const finish = () => {
+        const hpEl = row.querySelector(".rv-hp");
+        if(hpEl) hpEl.textContent = r.after + " / " + r.maxHp;
+        if(fill) fill.className = "rv-fill " + hpTone(r.after, r.maxHp);
+        if(r.before > 0 && r.after === 0 && row.querySelector(".rv-down")) row.querySelector(".rv-down").hidden = false;
+      };
+      const go = () => {
+        row.classList.remove("waiting");
+        if(!fill){ finish(); return; }
+        void fill.offsetWidth;                     // commit the starting widths before moving them
+        fill.style.width = pct(r.after) + "%";
+        ghost.style.transitionDelay = (calm ? 0 : RV_GHOST_WAIT) + "ms";
+        ghost.style.width = pct(r.after) + "%";
+        if(calm || r.after === r.before){ finish(); return; }
+        // Frames pause in a hidden tab, so the end state is also set on a timer
+        // and never depends on the count-up finishing.
+        rvTimers.push(setTimeout(finish, RV_DROP + 60));
+        const hpEl = row.querySelector(".rv-hp");
+        const t0 = performance.now();
+        const tick = now => {
+          const k = Math.min(1, (now - t0) / RV_DROP);
+          const hp = Math.round(r.before + (r.after - r.before) * k);
+          hpEl.textContent = hp + " / " + r.maxHp;
+          fill.className = "rv-fill " + hpTone(hp, r.maxHp);
+          if(k < 1) rvFrames.push(requestAnimationFrame(tick));
+        };
+        rvFrames.push(requestAnimationFrame(tick));
+      };
+      rvTimers.push(setTimeout(go, delay));
+    });
+    if(!results.length) list.innerHTML = '<div class="empty">No one was hit.</div>';
+    revealEl.classList.remove("hidden");
+    $("#rv-done").focus();
+  }
+
+  function closeReveal(){
+    rvTimers.forEach(clearTimeout);
+    rvFrames.forEach(cancelAnimationFrame);
+    rvTimers = []; rvFrames = [];
+    revealEl.classList.add("hidden");
+  }
+
+  $("#rv-done").addEventListener("click", closeReveal);
+  revealEl.addEventListener("click", e => { if(e.target === revealEl) closeReveal(); });
 
   /* ---------------- icon picker ---------------- */
   let pickerCb = null;
@@ -4192,6 +4460,7 @@ unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304
 
   const modalOpen = () => !els.dlg.classList.contains("hidden") ||
                           !atkEl.classList.contains("hidden") ||
+                          !revealEl.classList.contains("hidden") ||
                           !els.tie.classList.contains("hidden") ||
                           !$("#ask").classList.contains("hidden") ||
                           settingsOpen() || addOpen();
@@ -4211,6 +4480,7 @@ unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304
       if(!$("#ask").classList.contains("hidden")) return closeAsk();
       if(settingsOpen()) return closeSettings();
       if(addOpen()) return closeAdd();
+      if(!revealEl.classList.contains("hidden")) return closeReveal();
       if(!atkEl.classList.contains("hidden")) return closeAttack();
       if(!els.dlg.classList.contains("hidden")) return closeDialog();
       if(!els.tie.classList.contains("hidden")){ tieQueue = []; els.tie.classList.add("hidden"); }

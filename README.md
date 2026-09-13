@@ -34,8 +34,11 @@ Note that each device keeps its own battle — a fight set up on a laptop won't 
 - The fight sits at **Round 0** until you press *Start Battle*. Both reset buttons return you there.
 - Once the battle starts, whoever is up takes a spotlight above the order, drawn larger, with two
   buttons under it: **Attack** and **Finish turn**.
-- *Attack* asks how much damage was done, who took it (tick several for an area spell) and any
-  conditions it inflicts. `0` records a miss. The whole attack is one undo step.
+- *Attack* asks who took it (tick several for an area spell), the damage and any conditions it
+  inflicts. With several targets the damage is the same for each, split equally (rounded down) or
+  typed per target. `0` records a miss. The whole attack is one undo step.
+- After an attack, a results panel lists everyone hit and animates each health bar down, with a red
+  ghost of the lost chunk trailing behind.
 - *Finish turn*, `Space` or `→` moves to the next combatant. If nothing happened during the turn it
   asks before skipping. `←` steps back. The round counter advances on its own.
 
@@ -64,6 +67,10 @@ Note that each device keeps its own battle — a fight set up on a laptop won't 
   look identical across devices. The shared set needs the internet once, then caches.
 - *Behaviour* holds the tie prompts, the help text, the battle log rail and a reduce-motion switch.
 - Every setting is remembered on the device, and undo never rolls one back.
+
+**Testing**
+- Open `index.html?demo` to replace the board with a sample party and monsters at round 0, plus a
+  sample campaign. The `?demo` is dropped from the address once loaded, so a reload keeps the fight.
 
 ## Layout
 
