@@ -1171,6 +1171,67 @@ unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304
   body[data-role="player"] .cond-row,
   body[data-role="player"] .hp{cursor:default}
   body[data-role="player"] .hp.mine{cursor:pointer}
+
+  /* Before the fight, a player's device shows one message instead of the board. */
+  .stage-idle{display:none}
+  body[data-role="player"].idle .stage-idle{
+    display:flex;flex-direction:column;align-items:center;gap:18px;text-align:center;
+    background:var(--stone);padding:64px 22px 56px;margin-bottom:28px;
+  }
+  body[data-role="player"].idle .banner,
+  body[data-role="player"].idle #stage,
+  body[data-role="player"].idle .track-shell,
+  body[data-role="player"].idle .log-shell{display:none}
+  body[data-role="player"].idle .wrap{grid-template-columns:minmax(0,1fr)}
+  .stage-idle canvas{width:72px;height:72px;opacity:.55}
+  .idle-title{
+    font-family:var(--black);font-size:clamp(30px, 9vw, 48px);line-height:1.1;margin:0;
+    text-transform:none;letter-spacing:1px;padding:0;box-shadow:none;
+    color:var(--flame);text-shadow:4px 4px 0 var(--blood), 7px 7px 0 #000;
+  }
+  .idle-sub{font-family:var(--ui);font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--dim);line-height:1.8}
+  #idle-reroll[hidden]{display:none}
+
+  /* The initiative call: the d20 tumbles in and the words slam down after it,
+     on every device in the room at once. Stepped, like every other animation here. */
+  #roll-fx{
+    position:fixed;inset:0;z-index:240;display:flex;flex-direction:column;
+    align-items:center;justify-content:center;gap:26px;
+    background:rgba(6,4,9,.9);pointer-events:none;
+  }
+  #roll-fx[hidden]{display:none}
+  #roll-fx canvas{width:clamp(120px, 34vw, 190px);height:clamp(120px, 34vw, 190px)}
+  #roll-fx .rf-t{
+    font-family:var(--black);font-size:clamp(40px, 13vw, 84px);line-height:1;text-align:center;
+    color:var(--flame);text-shadow:5px 5px 0 var(--blood), 10px 10px 0 #000;
+  }
+  #roll-fx.go canvas{animation:rf-tumble 1.1s steps(11,end) both}
+  #roll-fx.go .rf-t{animation:rf-slam .5s steps(5,end) .7s both}
+  #roll-fx.go{animation:rf-fade .35s steps(4,end) 1.75s both}
+  @keyframes rf-tumble{
+    0%{transform:translateY(-70vh) rotate(0deg)}
+    60%{transform:translateY(0) rotate(900deg)}
+    75%{transform:translateY(-6vh) rotate(1000deg)}
+    100%{transform:translateY(0) rotate(1080deg)}
+  }
+  @keyframes rf-slam{0%{transform:scale(2.6);opacity:0}100%{transform:scale(1);opacity:1}}
+  @keyframes rf-fade{to{opacity:0}}
+  body.calm #roll-fx.go canvas,body.calm #roll-fx.go .rf-t{animation:none}
+  body.calm #roll-fx.go{animation:rf-fade .3s steps(3,end) .8s both}
+
+  /* the roll prompt and the DM's list of rolls */
+  .roll-in{
+    width:100%;text-align:center;font-family:var(--ui);font-size:34px;padding:16px 8px;
+  }
+  .roll-sum{font-family:var(--ui);font-size:12px;color:var(--flame);text-align:center;margin:16px 0 4px;min-height:1.5em}
+  .rolls-row .roll-state{font-family:var(--ui);font-size:10px;white-space:nowrap;color:var(--dim)}
+  .rolls-row .roll-state.in{color:var(--flame)}
+  .rolls-row .enc-init{width:76px;flex:0 0 auto;margin:0;padding:9px 4px;text-align:center;font-family:var(--ui);font-size:11px}
+
+  /* notifications on a player's device reuse the attack reveal */
+  .rv-tag.heal{color:var(--moss)}
+  .rv-conds .lost{opacity:.35;filter:grayscale(1)}
+  .rv-note{font-size:17px;color:var(--bone);margin-top:6px;line-height:1.3;white-space:pre-line}
 </style>
 </head>
 <!-- data-screen is set here, not from script, so the tracker never flashes
@@ -1260,6 +1321,14 @@ unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304
     <button type="button" id="btn-menu" class="btn-sm btn-ghost" title="Back to the main menu"><span class="sym">☰</span><span class="lbl"> Menu</span></button>
     <button type="button" id="btn-help" class="btn-sm btn-ghost"><span class="sym">✕</span> Hide help</button>
     <button type="button" id="btn-settings" class="btn-sm" title="Settings"><span class="sym">⚙</span><span class="lbl"> Settings</span></button>
+  </div>
+
+  <!-- a player's device before the fight starts; filled by render() -->
+  <div class="stage-idle" id="stage-idle">
+    <div id="idle-sprite"></div>
+    <h2 class="idle-title">No battle ongoing</h2>
+    <div class="idle-sub" id="idle-sub"></div>
+    <button type="button" id="idle-reroll" class="btn-blood" hidden>Change roll</button>
   </div>
 
   <div class="banner">
@@ -1888,6 +1957,43 @@ unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304
   </div>
 </div>
 
+<!-- "Roll Initiative", played on every device in a room when the DM starts the fight -->
+<div id="roll-fx" hidden aria-live="polite">
+  <div class="rf-die" id="rf-die"></div>
+  <div class="rf-t">Roll Initiative</div>
+</div>
+
+<!-- the DM's side of the roll: who has rolled, and a box for anyone rolling at the table -->
+<div id="rolls" class="overlay hidden">
+  <div class="modal" style="max-width:520px">
+    <h2>Roll for initiative</h2>
+    <p class="set-note" style="margin-top:0">Players in the room type their d20 on their own device. For anyone
+      else, type the d20 here. Dex is added for everyone, and anyone left blank keeps the initiative they
+      have now. Monsters keep what they rolled when they were added.</p>
+    <div class="party-list" id="rolls-list" style="margin-top:16px"></div>
+    <div class="modal-foot">
+      <button type="button" id="rolls-cancel" class="btn-ghost">Cancel</button>
+      <div class="spacer"></div>
+      <button type="button" id="rolls-go" class="btn-blood">Start battle <span class="sym">→</span></button>
+    </div>
+  </div>
+</div>
+
+<!-- a player's side of the roll -->
+<div id="roll-ask" class="overlay hidden">
+  <div class="modal" style="max-width:420px">
+    <h2 id="ra-title">Roll initiative</h2>
+    <p class="set-note" style="margin-top:0">Roll a d20 and type the number it shows. Your Dex modifier is added for you.</p>
+    <input type="number" id="ra-roll" class="roll-in" min="1" max="20" inputmode="numeric" placeholder="d20" aria-label="Your d20 roll">
+    <div class="roll-sum" id="ra-sum"></div>
+    <div class="modal-foot">
+      <button type="button" id="ra-later" class="btn-ghost">Later</button>
+      <div class="spacer"></div>
+      <button type="button" id="ra-send" class="btn-blood" disabled>Send</button>
+    </div>
+  </div>
+</div>
+
 <!-- confirmation prompt (native confirm() is blocked in sandboxed frames) -->
 <div id="ask" class="overlay hidden">
   <div class="modal" style="max-width:430px">
@@ -2169,6 +2275,8 @@ unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304
   $("#boot-sprite").appendChild(d20Sprite());
   $("#menu-sprite").appendChild(d20Sprite());
   $("#btn-roll").appendChild(d20Sprite());
+  $("#idle-sprite").appendChild(d20Sprite());
+  $("#rf-die").appendChild(d20Sprite());
 
   /* ---------------- persistence ---------------- */
   function normalize(s){
@@ -2540,6 +2648,10 @@ unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304
     // under it. The same card stays in the strip below, so the order keeps its context.
     // On a player's device the actions are only there on that player's own turn.
     const mine = playing() && !!a && a.id === myCombatantId();
+    // before the fight a player's device shows only the idle message (see paintIdle)
+    const idle = playing() && state.round === 0;
+    document.body.classList.toggle("idle", idle);
+    if(idle) paintIdle();
     $("#stage").hidden = !a;
     $("#stage-card").replaceChildren(...(a ? [cardEl(a)] : []));
     $(".stage-actions").hidden = playing() && !mine;
@@ -3083,7 +3195,8 @@ unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304
       return askConfirm("Skip turn", "You haven't done anything this turn. Skip it?",
         "Skip turn", () => roomSend({t:"finish"}));
     }
-    if(state.round === 0 || !a || state.turnDirty) return step(1);
+    if(state.round === 0) return beginBattle();
+    if(!a || state.turnDirty) return step(1);
     askConfirm("Skip turn",
       a.name + " hasn't done anything this turn. Skip to the next combatant?",
       "Skip turn", () => {
@@ -3153,9 +3266,17 @@ unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304
 
   /* ---------------- tie-breaking ---------------- */
   let tieQueue = [], tiePicked = [], tieGroup = null;
+  // Something to do once every tie is settled (or skipped): a room's rolled
+  // initiative starts the battle only after its ties are sorted out.
+  let afterTies = null;
+  function tiesDone(){
+    const cb = afterTies;
+    afterTies = null;
+    if(cb) cb();
+  }
 
   function maybeAskTies(affectedIds){
-    if(!state.askTies) return;
+    if(!state.askTies) return tiesDone();
     const groups = new Map();
     state.combatants.forEach(c => {
       if(!groups.has(c.init)) groups.set(c.init, []);
@@ -3170,7 +3291,7 @@ unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304
 
   function nextTie(){
     tieGroup = tieQueue.shift() || null;
-    if(!tieGroup){ els.tie.classList.add("hidden"); return; }
+    if(!tieGroup){ els.tie.classList.add("hidden"); return tiesDone(); }
     // members may have been removed since the queue was built
     tieGroup = tieGroup.filter(c => state.combatants.includes(c));
     if(tieGroup.length < 2) return nextTie();
@@ -3230,6 +3351,7 @@ unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304
     tieQueue = [];
     save();
     els.tie.classList.add("hidden");
+    tiesDone();
   });
 
   /* ---------------- confirmation prompt ----------------
@@ -3557,7 +3679,7 @@ unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304
     if(playing()) return roomSend({t:"attack", hits, conds, split});
     const results = resolveAttack(a, hits, conds, split);
     save(); render();
-    openReveal(a, results);
+    openReveal(a.name + "'s attack", results);
   }
 
   /* Applies one attack by `a`: `hits` is [{id, n}] where n is the damage, 0 for
@@ -3610,17 +3732,20 @@ unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304
   /* ---------------- attack reveal ----------------
      Everyone the attack touched, one after another: the health bar drops at
      once and a red ghost of what was lost lingers, then shrinks after it, while
-     the HP number counts down. Purely a display of what commitAttack() already saved. */
+     the HP number counts down. Purely a display of what commitAttack() already saved.
+     A player's device uses it too, for what just happened to their own character:
+     there `amount` can be negative (healing), `lost` lists conditions that ended and
+     `note` carries the log lines that describe it. */
   const revealEl = $("#reveal");
   const RV_STAGGER = 450, RV_DROP = 350, RV_GHOST_WAIT = 550;
   let rvTimers = [], rvFrames = [];
 
   const hpTone = (hp, max) => { const p = hp / max; return p <= 0.25 ? "bad" : p <= 0.5 ? "warn" : "on"; };
 
-  function openReveal(attacker, results){
+  function openReveal(title, results){
     closeReveal();
     const calm = document.body.classList.contains("calm");
-    $("#rv-title").textContent = attacker.name + "'s attack";
+    $("#rv-title").textContent = title;
     const list = $("#rv-list");
     list.innerHTML = "";
     results.forEach((r, i) => {
@@ -3629,7 +3754,9 @@ unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304
       row.dataset.type = r.type;
       const pct = hp => r.maxHp ? clamp(hp / r.maxHp * 100, 0, 100) : 0;
       const tag = r.miss ? '<span class="rv-tag miss">Miss</span>'
-                : r.amount !== null ? '<span class="rv-tag">-' + r.amount + '</span>' : "";
+                : r.amount === null || r.amount === undefined ? ""
+                : r.amount < 0 ? '<span class="rv-tag heal">+' + (-r.amount) + '</span>'
+                : '<span class="rv-tag">-' + r.amount + '</span>';
       const soaked = r.amount > 0 ? r.tempBefore - r.tempAfter : 0;
       row.innerHTML = '<i class="face"></i>' +
         '<div class="rv-main"><b class="rv-name">' + esc(r.name) + '</b>' +
@@ -3641,9 +3768,16 @@ unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304
             (soaked ? ' <span class="rv-soak">· ' + soaked + ' soaked by temp HP</span>' : '') +
             '<span class="rv-down" hidden><span class="sym">☠</span> Down</span></div>'
           : '<div class="rv-sub">No HP set</div>') +
-        '<div class="rv-conds"></div></div>' + tag;
+        '<div class="rv-conds"></div>' + (r.note ? '<div class="rv-note"></div>' : "") + '</div>' + tag;
       row.querySelector(".face").replaceWith(iconSprite(r.img || r.icon));
       r.conds.forEach(k => row.querySelector(".rv-conds").appendChild(sprite(COND[k].e, 16)));
+      (r.lost || []).forEach(k => {
+        const cv = sprite(COND[k].e, 16);
+        cv.classList.add("lost");
+        cv.title = COND[k].n + " ended";
+        row.querySelector(".rv-conds").appendChild(cv);
+      });
+      if(r.note) row.querySelector(".rv-note").textContent = r.note;
       list.appendChild(row);
 
       const fill = row.querySelector(".rv-fill"), ghost = row.querySelector(".rv-ghost");
@@ -4602,6 +4736,9 @@ unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304
     room = null;
     forget();
     delete document.body.dataset.role;
+    // the initiative call belongs to the room
+    $("#rolls").classList.add("hidden");
+    $("#roll-ask").classList.add("hidden");
     roomChrome();
     return r;
   }
@@ -4624,7 +4761,7 @@ unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304
       const o = {id:c.id, name:c.name, type:c.type, icon:c.icon, init:c.init, conds:c.conds};
       if(c.img){ o.art = hashStr(c.img); art[o.art] = c.img; }
       if(c.type === "enemy") o.hs = healthOf(c);
-      else Object.assign(o, {charId:c.charId, ac:c.ac, hp:c.hp, maxHp:c.maxHp, tempHp:c.tempHp});
+      else Object.assign(o, {charId:c.charId, ac:c.ac, hp:c.hp, maxHp:c.maxHp, tempHp:c.tempHp, mod:c.mod});
       return o;
     });
     const camp = s.campaignId && findCampaign(s.campaignId);
@@ -4662,7 +4799,8 @@ unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304
 
   function startHost(code){
     room = {role:"host", code, status:"wait", streams:[], claims:{}, done:new Set(),
-            sentArt:new Set(), lastView:null, q:Promise.resolve(), touched:Date.now()};
+            sentArt:new Set(), lastView:null, q:Promise.resolve(), touched:Date.now(),
+            fx:[], fxSeq:0, prevBoard:null, rolling:null};
     const r = room;
     remember();
     r.streams.push(roomListen(roomPath(r, "actions"), v => { if(room === r) onActions(v); }));
@@ -4670,6 +4808,7 @@ unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304
       if(room !== r) return;
       r.claims = v || {};
       if(!$("#room").classList.contains("hidden")) paintRoomPanel();
+      if(!$("#rolls").classList.contains("hidden")) paintRolls();
     }));
     roomPush();
     roomChrome();
@@ -4683,9 +4822,49 @@ unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304
     r.pushT = setTimeout(() => { r.q = r.q.then(() => roomFlush(r)); }, 150);
   }
 
+  /* What happened to each claimed character since the last write, for the player
+     holding it. Worked out here, from the board itself, rather than at each place
+     that changes HP or conditions, so an attack, the HP box, the edit dialog, a
+     condition wearing off and an undo are all caught the same way. Only players
+     and allies are looked at, so nothing here can carry an enemy's numbers. */
+  const FX_LOG = ["damage","heal","temp","down","cond","edit"];
+  function collectFx(r){
+    const board = {};
+    state.combatants.forEach(c => {
+      if(c.type !== "enemy") board[c.id] = {hp:c.hp, tempHp:c.tempHp, conds:c.conds.map(x => x.k)};
+    });
+    const prev = r.prevBoard, prevRound = r.prevRound;
+    // log lines written since last time; after an undo the old marker is gone, and there are none
+    const at = r.prevLog ? state.log.indexOf(r.prevLog) : -1;
+    const fresh = at >= 0 ? state.log.slice(at + 1) : [];
+    r.prevBoard = board;
+    r.prevRound = state.round;
+    r.prevLog = state.log[state.log.length - 1] || null;
+    if(!prev) return;
+    state.combatants.forEach(c => {
+      const o = prev[c.id], n = board[c.id], key = claimKey(c);
+      if(!o || !n || !r.claims[key]) return;
+      // a new battle or a reroll puts everyone back to full at round 0, which is not news
+      const hp = (o.hp !== n.hp || o.tempHp !== n.tempHp) && prevRound > 0 && state.round > 0;
+      const gained = n.conds.filter(k => !o.conds.includes(k));
+      const lost = o.conds.filter(k => !n.conds.includes(k));
+      if(!hp && !gained.length && !lost.length) return;
+      r.fx.push({
+        id:Date.now().toString(36).padStart(9, "0") + (r.fxSeq++).toString(36).padStart(4, "0"),
+        key, name:c.name, type:c.type, icon:c.icon, art:c.img ? hashStr(c.img) : null, maxHp:c.maxHp,
+        hp, before:o.hp, after:n.hp, tempBefore:o.tempHp, tempAfter:n.tempHp, gained, lost,
+        lines:fresh.filter(e => FX_LOG.includes(e.k) && e.x.includes(c.name)).map(e => e.x).slice(-4)
+      });
+    });
+    if(r.fx.length > 10) r.fx.splice(0, r.fx.length - 10);
+  }
+
   async function roomFlush(r){
     if(room !== r) return;
+    collectFx(r);
     const {view, art} = publicView(state);
+    view.fx = r.fx;
+    view.rolling = r.rolling || null;
     try{
       const fresh = {};
       Object.keys(art).forEach(k => { if(!r.sentArt.has(k)) fresh[k] = art[k]; });
@@ -4736,7 +4915,14 @@ unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304
     const me = state.combatants.find(c => c.id === a.by);
     if(!me || typeof a.uid !== "string" || room.claims[claimKey(me)] !== a.uid) return;
     const onTurn = state.round > 0 && state.activeId === me.id && a.round === state.round;
-    if(a.t === "finish" && onTurn){
+    if(a.t === "init"){
+      // only while the DM is calling for initiative; sending again replaces the roll
+      const roll = parseInt(a.roll, 10);
+      if(!room.rolling || state.round !== 0 || !(roll >= 1 && roll <= 20)) return;
+      room.rolling.rolls[claimKey(me)] = {roll, total:roll + (me.mod || 0)};
+      if(!$("#rolls").classList.contains("hidden")) paintRolls();
+      roomPush();
+    } else if(a.t === "finish" && onTurn){
       if(!state.turnDirty) logEvent("turn", me.name + " skipped their turn");
       step(1);
     } else if(a.t === "attack" && onTurn){
@@ -4749,7 +4935,7 @@ unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304
       if(!hits.length) return;
       const results = resolveAttack(me, hits, conds, a.split === true);
       save(); render();
-      openReveal(me, results);
+      openReveal(me.name + "'s attack", results);
     } else if(a.t === "hp" && typeof a.raw === "string"){
       applyHpInput(me, a.raw.slice(0, 12));
       save(); render();
@@ -4867,9 +5053,56 @@ unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304
         }
       });
     }
+    const first = !r.shown;
+    const wasRolling = !!r.rollingView;
+    r.rollingView = (v.rolling && v.rolling.open) ? v.rolling : null;
     state = s;
     r.shown = true;
     refreshPlayer();
+
+    // The DM called for initiative: the animation, then this player's prompt. A
+    // device that arrives mid-call just gets the prompt; one that sees the call
+    // end (the battle started, or the DM cancelled) loses it.
+    if(r.rollingView && !wasRolling){
+      if(first) askRollIfDue(); else playRollFx(askRollIfDue);
+    } else if(!r.rollingView && wasRolling){
+      closeRollAsk();
+    }
+
+    // Anything that happened to this player's character since the last copy. The
+    // first copy after joining or a reload only marks where things stand, so old
+    // hits are not replayed.
+    const fx = toList(v.fx).filter(e => typeof e.id === "string");
+    const newest = fx.reduce((m, e) => e.id > m ? e.id : m, r.lastFx || "");
+    if(!first){
+      const mine = fx.filter(e => e.id > (r.lastFx || "") && e.key === r.myKey);
+      if(mine.length && document.body.dataset.screen === "track") showHitFx(mine);
+    }
+    r.lastFx = newest;
+  }
+
+  /* Several changes that arrive together show as one row: where the character
+     started, where they ended up, and every condition that came or went. */
+  function showHitFx(list){
+    const a = list[0], z = list[list.length - 1];
+    const gained = new Set(), lost = new Set();
+    list.forEach(e => {
+      toList(e.gained).forEach(k => { gained.add(k); lost.delete(k); });
+      toList(e.lost).forEach(k => { lost.add(k); gained.delete(k); });
+    });
+    const moved = list.some(e => e.hp);
+    const first = list.find(e => e.hp) || a;
+    const before = moved ? first.before : z.after, after = z.after;
+    const tempBefore = moved ? first.tempBefore || 0 : z.tempAfter || 0, tempAfter = z.tempAfter || 0;
+    const change = (before + tempBefore) - (after + tempAfter);
+    openReveal(z.name, [{
+      name:z.name, type:z.type, icon:z.icon, img:(z.art && room.art[z.art]) || null, maxHp:z.maxHp || 0,
+      before, after, tempBefore, tempAfter,
+      amount:moved && change !== 0 ? change : null, miss:false,
+      conds:[...gained].filter(k => COND[k]), lost:[...lost].filter(k => COND[k]),
+      note:list.flatMap(e => toList(e.lines)).slice(-4).join("\n")
+    }]);
+    try{ if(navigator.vibrate) navigator.vibrate(120); }catch(e){}
   }
 
   function refreshPlayer(){
@@ -4910,6 +5143,7 @@ unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304
     remember();
     showScreen("track");
     scrollToActive();
+    askRollIfDue();     // picked a character while the DM was already calling for initiative
   }
 
   function roomSend(a){
@@ -4960,6 +5194,175 @@ unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304
     askConfirm("Room closed", wasPlaying ? "Room " + code + " has been closed by the DM."
                                          : "Room " + code + " is no longer open.", "OK", null);
   }
+
+  /* ---- rolling for initiative together ----
+     With a room open and at least one character claimed, Start Battle becomes a
+     call for initiative: every device plays the Roll Initiative animation, each
+     player types their d20 on their own device, and the DM starts the fight from
+     a list showing who has rolled. The call lives on `room`, not in `state`, so
+     it is never saved or undone; a DM who reloads during it just calls again. */
+  const sumText = (roll, mod) => roll + (mod < 0 ? " − " + (-mod) : " + " + mod) + " = " + (roll + mod);
+
+  let rollFxT = 0;
+  function playRollFx(done){
+    const el = $("#roll-fx");
+    clearTimeout(rollFxT);
+    el.classList.remove("go");
+    el.hidden = false;
+    void el.offsetWidth;                         // restart the animation if it is already showing
+    el.classList.add("go");
+    const calm = document.body.classList.contains("calm");
+    rollFxT = setTimeout(() => {
+      el.hidden = true;
+      el.classList.remove("go");
+      if(done) done();
+    }, calm ? 1150 : 2150);
+  }
+
+  function beginBattle(){
+    const called = hosting() && state.combatants.some(c => c.type !== "enemy" && room.claims[claimKey(c)]);
+    if(!called) return step(1);
+    room.rolling = {open:true, rolls:{}};
+    roomPush();
+    playRollFx(() => {
+      if(!hosting() || !room.rolling) return;
+      paintRolls();
+      $("#rolls").classList.remove("hidden");
+    });
+  }
+
+  /* Rebuilt whenever a roll or a claim comes in, keeping whatever the DM has
+     typed and where the cursor was. */
+  function paintRolls(){
+    if(!hosting() || !room.rolling) return;
+    const box = $("#rolls-list");
+    const typed = {};
+    let focusId = null;
+    box.querySelectorAll(".rolls-row").forEach(row => {
+      const inp = row.querySelector("input");
+      if(!inp) return;
+      typed[row.dataset.id] = inp.value;
+      if(document.activeElement === inp) focusId = row.dataset.id;
+    });
+    box.innerHTML = "";
+    const list = state.combatants.filter(c => c.type !== "enemy");
+    if(!list.length) box.innerHTML = '<div class="empty">There are no players or allies on the board.</div>';
+    list.forEach(c => {
+      const key = claimKey(c), claimed = !!room.claims[key], got = room.rolling.rolls[key];
+      const mod = c.mod || 0;
+      const row = document.createElement("div");
+      row.className = "set-row party-row rolls-row";
+      row.dataset.id = c.id;
+      row.innerHTML = '<i class="face"></i><span class="who"><b>' + esc(c.name) + '</b><small>' +
+        esc((claimed ? "On their device" : "Type their d20") + " · Dex " + (mod < 0 ? mod : "+" + mod) +
+            " · now " + c.init) + '</small></span>' +
+        (claimed
+          ? '<span class="roll-state' + (got ? " in" : "") + '">' + (got ? esc(sumText(got.roll, mod)) : "Waiting…") + "</span>"
+          : '<input type="number" class="enc-init" min="1" max="20" placeholder="d20" aria-label="' +
+            esc(c.name) + ' d20 roll">');
+      fillFace(row, c);
+      const inp = row.querySelector("input");
+      if(inp && typed[c.id] !== undefined) inp.value = typed[c.id];
+      box.appendChild(row);
+      if(inp && focusId === c.id) inp.focus();
+    });
+  }
+
+  function cancelRolls(){
+    $("#rolls").classList.add("hidden");
+    if(!hosting() || !room.rolling) return;
+    room.rolling = null;
+    roomPush();
+  }
+
+  function startRolledBattle(){
+    if(!hosting() || !room.rolling) return;
+    const ids = [], said = [];
+    state.combatants.filter(c => c.type !== "enemy").forEach(c => {
+      const key = claimKey(c), got = room.rolling.rolls[key];
+      const inp = $("#rolls-list").querySelector('.rolls-row[data-id="' + c.id + '"] input');
+      const typed = inp && inp.value.trim() !== "" ? clamp(parseInt(inp.value, 10) || 1, 1, 20) : null;
+      const roll = (got && room.claims[key]) ? got.roll : typed;
+      if(roll === null) return;                 // not rolled: keeps the initiative it has
+      c.init = roll + (c.mod || 0);
+      ids.push(c.id);
+      said.push(c.name + " " + c.init);
+    });
+    $("#rolls").classList.add("hidden");
+    room.rolling = null;
+    if(said.length){
+      sortByInit();
+      logEvent("order", "Initiative rolled: " + said.join(", "));
+    }
+    save(); render();
+    // ties first, so whoever goes first is settled before the battle starts
+    afterTies = () => step(1);
+    if(ids.length) maybeAskTies(ids); else tiesDone();
+  }
+
+  /* A player's prompt, opened when the call reaches them if they have a
+     character that has not rolled yet. */
+  const myRoll = () => (playing() && room.rollingView && room.rollingView.rolls && room.myKey)
+    ? room.rollingView.rolls[room.myKey] || null : null;
+
+  function askRollIfDue(){
+    if(!playing() || !room.rollingView || document.body.dataset.screen !== "track") return;
+    if(myCombatantId() && !myRoll()) openRollAsk();
+  }
+
+  function openRollAsk(){
+    const me = playing() && state.combatants.find(c => c.id === myCombatantId());
+    if(!me || !room.rollingView) return;
+    $("#ra-title").textContent = "Roll initiative: " + me.name;
+    const got = myRoll();
+    $("#ra-roll").value = got ? got.roll : "";
+    syncRollAsk();
+    $("#roll-ask").classList.remove("hidden");
+    $("#ra-roll").focus();
+  }
+
+  function syncRollAsk(){
+    const me = playing() && state.combatants.find(c => c.id === myCombatantId());
+    const n = parseInt($("#ra-roll").value, 10);
+    const ok = n >= 1 && n <= 20;
+    $("#ra-sum").textContent = ok && me ? sumText(n, me.mod || 0) : "";
+    $("#ra-send").disabled = !ok;
+  }
+
+  function closeRollAsk(){ $("#roll-ask").classList.add("hidden"); }
+
+  function sendRoll(){
+    const n = parseInt($("#ra-roll").value, 10);
+    if(!(n >= 1 && n <= 20)) return;
+    closeRollAsk();
+    roomSend({t:"init", roll:n});
+  }
+
+  /* The idle screen on a player's device, before the fight. */
+  function paintIdle(){
+    const me = state.combatants.find(c => c.id === myCombatantId());
+    const got = myRoll();
+    const lines = ["Room " + room.code + " · " + (me ? "playing " + me.name : "watching")];
+    if(room.rollingView && me) lines.push(got ? "You rolled " + got.total + ". Waiting for the DM to start."
+                                              : "Roll for initiative!");
+    else if(room.rollingView) lines.push("The DM is calling for initiative.");
+    else lines.push("Waiting for the DM to start");
+    $("#idle-sub").replaceChildren(...lines.flatMap((t, i) => i ? [document.createElement("br"), t] : [t]));
+    $("#idle-reroll").hidden = !(room.rollingView && me);
+    $("#idle-reroll").textContent = got ? "Change roll" : "Roll initiative";
+  }
+
+  $("#rolls-go").addEventListener("click", startRolledBattle);
+  $("#rolls-cancel").addEventListener("click", cancelRolls);
+  $("#idle-reroll").addEventListener("click", openRollAsk);
+  $("#ra-roll").addEventListener("input", syncRollAsk);
+  $("#ra-roll").addEventListener("keydown", e => {
+    e.stopPropagation();
+    if(e.key === "Enter") sendRoll();
+    if(e.key === "Escape") closeRollAsk();
+  });
+  $("#ra-send").addEventListener("click", sendRoll);
+  $("#ra-later").addEventListener("click", closeRollAsk);
 
   /* ---- the join screen ---- */
   const jrMsg = t => { $("#jr-msg").textContent = t; };
@@ -5453,6 +5856,8 @@ unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304
                           !els.tie.classList.contains("hidden") ||
                           !$("#ask").classList.contains("hidden") ||
                           !$("#room").classList.contains("hidden") ||
+                          !$("#rolls").classList.contains("hidden") ||
+                          !$("#roll-ask").classList.contains("hidden") ||
                           settingsOpen() || addOpen();
 
   document.addEventListener("keydown", e => {
@@ -5469,12 +5874,14 @@ unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304
       }
       if(!$("#ask").classList.contains("hidden")) return closeAsk();
       if(!$("#room").classList.contains("hidden")) return closeRoomPanel();
+      if(!$("#roll-ask").classList.contains("hidden")) return closeRollAsk();
+      if(!$("#rolls").classList.contains("hidden")) return cancelRolls();
       if(settingsOpen()) return closeSettings();
       if(addOpen()) return closeAdd();
       if(!revealEl.classList.contains("hidden")) return closeReveal();
       if(!atkEl.classList.contains("hidden")) return closeAttack();
       if(!els.dlg.classList.contains("hidden")) return closeDialog();
-      if(!els.tie.classList.contains("hidden")){ tieQueue = []; els.tie.classList.add("hidden"); }
+      if(!els.tie.classList.contains("hidden")){ tieQueue = []; els.tie.classList.add("hidden"); tiesDone(); }
       // last rung: a sub-screen steps back to the menu. The menu itself is the
       // root, so Escape there does nothing rather than dropping into a fight.
       const scr = document.body.dataset.screen;

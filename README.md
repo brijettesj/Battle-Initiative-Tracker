@@ -72,8 +72,16 @@ Note that each device keeps its own battle — a fight set up on a laptop won't 
 - The DM presses *Room* on the tracker, then *Open a room*, and reads out the five-character code.
 - Players choose *Join Room* on the menu, or open `…/Battle-Initiative-Tracker/?room=CODE`, type the
   code and pick their character. Each character can only be picked by one device.
+- Until the fight starts, a player's device just says *No battle ongoing*.
+- With players in the room, *Start Battle* calls for initiative: every device plays a *Roll
+  Initiative* animation, and each player types the d20 they rolled (their Dex modifier is added
+  for them). The DM sees who has rolled, types rolls for anyone without the app, and presses *Start
+  battle*. Anyone who hasn't rolled keeps their current initiative, and ties are settled first.
 - On their own character's turn a player can *Attack* and *Finish turn*, and at any time they can
   type into their own health bar. Everything else is read-only on their device.
+- Whenever their character is hurt, healed, or gains or loses a condition, however the DM did it
+  (undo included), the player's device shows the same health-bar reveal the DM sees, with what
+  happened underneath, and vibrates where the phone supports it.
 - Players see exact numbers for players and allies, but enemies only as *Unhurt*, *Wounded*,
   *Bloodied*, *Near death* or *Down*. The DM's notes and damage lines in the log are not sent.
 - The DM's device stays in charge: a player's action is applied there, so it shows in the DM's log
