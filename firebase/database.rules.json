@@ -1,0 +1,26 @@
+{
+  "rules": {
+    "rooms": {
+      "$code": {
+        ".read": "auth != null",
+        ".write": "auth != null && (!data.exists() || data.child('meta/owner').val() === auth.uid || data.child('meta/at').val() < now - 86400000)",
+        ".validate": "$code.matches(/^[A-HJ-NP-Z2-9]{5}$/)",
+        "meta": {
+          ".validate": "newData.hasChildren(['owner', 'at']) && newData.child('owner').val() === auth.uid"
+        },
+        "claims": {
+          "$key": {
+            ".write": "auth != null && data.parent().parent().child('meta').exists() && ((!data.exists() && newData.val() === auth.uid) || (data.val() === auth.uid && !newData.exists()))",
+            ".validate": "newData.isString()"
+          }
+        },
+        "actions": {
+          "$id": {
+            ".write": "auth != null && !data.exists() && data.parent().parent().child('meta').exists()",
+            ".validate": "newData.child('uid').val() === auth.uid && newData.child('t').isString()"
+          }
+        }
+      }
+    }
+  }
+}
